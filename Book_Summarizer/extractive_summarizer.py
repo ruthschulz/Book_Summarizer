@@ -14,6 +14,7 @@ from sumy.evaluation import cosine_similarity
 from sumy.evaluation import rouge_n, rouge_l_sentence_level, rouge_l_summary_level
 import pathlib
 import pandas as pd
+import csv
 
 # divide_book_into_chapters(book_id)
 #
@@ -24,8 +25,6 @@ import pandas as pd
 # makes chapters at least 20 lines long
 # as there are often two double spaces at the start of a chapter
 # limits chapters to the end of the next paragraph after 3000 lines
-
-
 def divide_book_into_chapters(book_id):
     book_filename = '../data/books/' + str(book_id) + '.txt'
     chapter_filename = '../data/book_chapters/' + str(book_id) + '-'
@@ -58,25 +57,23 @@ def divide_book_into_chapters(book_id):
 
 # analyze_summary(book_id)
 #
-# analyze the summary using ROUGE scores (n, l_sentence, l_summary) and cosine similarity
+# analyze the summary using ROUGE n score and cosine similarity
 def analyze_summary(book_id):
     combined_filename = '../data/combined_summaries/' + \
         str(book_id) + '.txt'
     summary_filename = '../data/summaries/' + \
         str(book_id) + '.txt'
-    parser_s = PlaintextParser.from_file(summary_filename, Tokenizer("english"))
-    parser_e = PlaintextParser.from_file(summary_filename, Tokenizer("english"))
+    parser_s = PlaintextParser.from_file(
+        summary_filename, Tokenizer("english"))
+    parser_e = PlaintextParser.from_file(
+        summary_filename, Tokenizer("english"))
     summary_s = parser_s.document.sentences
     summary_e = parser_e.document.sentences
     rouge_n_score = rouge_n(summary_s, summary_e)
-    rouge_l_sentence_score = rouge_l_sentence_level(summary_s, summary_e)
-    rouge_l_summary_score = rouge_l_summary_level(summary_s, summary_e)
     model1 = TfDocumentModel(str(summary_s), Tokenizer("en"))
     model2 = TfDocumentModel(str(summary_e), Tokenizer("en"))
     cosine_sim_score = cosine_similarity(model1, model2)
-    return [rouge_n_score, rouge_l_sentence_score,
-        rouge_l_summary_score, cosine_sim_score]
-    
+    return [rouge_n_score, cosine_sim_score]
 
 
 # combine_extractive_summaries(book_id)
@@ -140,8 +137,6 @@ def create_extractive_summary_book(book_id, summarizer, size):
         path = pathlib.Path(chapter_filename)
 
 
-
-
 # for all books listed in data_stats.csv
 # divide into chapters and save in book_chapters folder
 def test_divide_into_chapters():
@@ -161,6 +156,7 @@ def test_create_luhn_extractive_summaries():
         print(pg_index)
         create_extractive_summary_book(pg_index, summarizer, 3)
 
+
 # for all books listed in data_stats.csv
 # create extractive summary using sumy standard summarizer LSA
 def test_create_lsa_extractive_summaries():
@@ -170,6 +166,7 @@ def test_create_lsa_extractive_summaries():
         pg_index = row[1]
         print(pg_index)
         create_extractive_summary_book(pg_index, summarizer, 3)
+
 
 # for all books listed in data_stats.csv
 # create extractive summary using sumy standard summarizer TextRank
@@ -181,6 +178,7 @@ def test_create_tr_extractive_summaries():
         print(pg_index)
         create_extractive_summary_book(pg_index, summarizer, 3)
 
+
 # for all books listed in data_stats.csv
 # create extractive summary using sumy standard summarizer LexRank
 def test_create_lr_extractive_summaries():
@@ -191,24 +189,37 @@ def test_create_lr_extractive_summaries():
         print(pg_index)
         create_extractive_summary_book(pg_index, summarizer, 3)
 
+
+# for all books listed in data_stats.csv
+# combine extractive summaries into one text file
 def test_combine_extractive_summaries():
     df = pd.read_csv("data_stats.csv", sep=',', header=None)
-    summarizer = LsaSummarizer()
     for index, row in df.iterrows():
         pg_index = row[1]
         print(pg_index)
         combine_extractive_summaries(pg_index)
 
 
+# for all combined summaries
+# print analysis of the summary compared to the supplied summary
 def test_analyze_summary():
     df = pd.read_csv("data_stats.csv", sep=',', header=None)
-    summarizer = LsaSummarizer()
+    scores = []
     for index, row in df.iterrows():
         pg_index = row[1]
         print(pg_index)
-        print(analyze_summary(pg_index))
+        combined_filename = '../data/combined_summaries/' + \
+            str(pg_index) + '.txt'
+        path = pathlib.Path(combined_filename)
+        if path.exists():
+            scores.append(analyze_summary(pg_index))
+            print(scores[-1])
+    with open('combined_summary_scores.csv', 'w') as csvFile:
+        writer = csv.writer(csvFile)
+        writer.writerows(scores)
+    csvFile.close()
 
 
+# for one book, print analysis of the summary compared to the supplied summary
 def test_analyze_summary1(book_id):
     print(analyze_summary(book_id))
-
