@@ -66,7 +66,7 @@ def analyze_summary(book_id):
     parser_s = PlaintextParser.from_file(
         summary_filename, Tokenizer("english"))
     parser_e = PlaintextParser.from_file(
-        summary_filename, Tokenizer("english"))
+        combined_filename, Tokenizer("english"))
     summary_s = parser_s.document.sentences
     summary_e = parser_e.document.sentences
     rouge_n_score = rouge_n(summary_s, summary_e)
