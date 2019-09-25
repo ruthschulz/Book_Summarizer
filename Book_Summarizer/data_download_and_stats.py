@@ -8,6 +8,23 @@ import csv
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 
+def get_text_filename(book_id):
+    return str(book_id) + ".txt"
+
+def get_zip_filename(book_id):
+    return str(book_id) + ".zip"
+
+def get_raw_book_filename(book_id):
+    return '../data/raw_books/' + get_text_filename(book_id)
+
+def get_clean_book_filename(book_id):
+    return '../data/books/' + get_text_filename(book_id)
+
+def get_chapter_filename(book_id, chapter_num):
+    return '../data/book_chapters/' + str(book_id) + '-' + str(chapter_num) + '.txt'
+
+def get_summary_filename(book_id):
+    return '../data/summaries/' + str(book_id) + '.txt'
 
 # calculate_data_stats(book_filename,summary_filename)
 #
@@ -91,7 +108,13 @@ def download_from_gutenberg(pg_id):
 #
 # unzip the book and move to books folder
 # remove zip file afterwards
-def extract_book(pg_index, zip_filename, text_filename, book_filename):
+def extract_book(pg_index, zip_filename='', text_filename='', book_filename=''):
+    if len(zip_filename)==0:
+        zip_filename = str(pg_index) + ".zip"
+    if len(text_filename)==0:
+        text_filename = str(pg_index) + ".txt"
+    if len(book_filename)==0:
+        book_filename = '../data/raw_books/' + text_filename
     with ZipFile(zip_filename, 'r') as zipObj:
         zipObj.extractall()
     if os.path.exists(text_filename):
@@ -112,11 +135,14 @@ def save_summary(df_summaries, new_title, summary_filename):
         f.write(new_summary)
 
 
-# save_clean_book(book_filename,clean_book_filename)
+# save_clean_book(pg_index)
 #
 # removes information about project gutenberg from the book
 # replaces the book file with the cleaned book
-def save_clean_book(book_filename, clean_book_filename):
+def save_clean_book(pg_index):
+    text_filename = get_text_filename(pg_index)
+    book_filename = get_raw_book_filename(pg_index)
+    clean_book_filename = get_clean_book_filename(pg_index)
     book = open(book_filename, 'r', encoding='latin-1')
     clean_book = open(clean_book_filename, 'w')
     write_lines = False
@@ -138,6 +164,44 @@ def save_clean_book(book_filename, clean_book_filename):
             clean_book.write(l)
         book.close()
         clean_book.close()
+
+
+# divide_book_into_chapters(book_id)
+#
+# divides the book file into separate chapter files
+# book file is in the data/books folder
+# chapter files are saved in the data/book_chapters folder
+# assumes chapter breaks occur when there are two empty lines in a row
+# makes chapters at least 20 lines long
+# as there are often two double spaces at the start of a chapter
+# limits chapters to the end of the next paragraph after 3000 lines
+def divide_book_into_chapters(book_id):
+    book_filename = get_clean_book_filename(book_id)
+    count_chapters = 0
+    count_lines_in_chapter = 0
+    previous_blank_line = False
+    book = open(book_filename, 'r', encoding='latin-1')
+    book_chapter = open(get_chapter_filename(book_id,count_chapters), 'w')
+    for l in book:
+        if (count_lines_in_chapter < 3000) and ((len(l) > 1) or (count_lines_in_chapter < 20)):
+            previous_blank_line = False
+            count_lines_in_chapter += 1
+            book_chapter.write(l)
+        elif (len(l) == 1) and ((previous_blank_line == True) or (count_lines_in_chapter > 3000)):
+            count_lines_in_chapter = 0
+            count_chapters += 1
+            book_chapter.close()
+            book_chapter = open(get_chapter_filename(book_id,count_chapters), 'w')
+        elif (len(l) == 1):
+            count_lines_in_chapter += 1
+            previous_blank_line = True
+            book_chapter.write(l)
+        else:
+            count_lines_in_chapter += 1
+            book_chapter.write(l)
+    book_chapter.close()
+    book.close()
+    return count_chapters
 
 
 def create_book_dataset():
@@ -166,15 +230,15 @@ def create_book_dataset():
         if ((new_title not in titles) and (calculate_author_match(pg_author, summaries_author) > 40)):
             file_exists = download_from_gutenberg(pg_index)
             if (file_exists):
-                zip_filename = str(pg_index) + ".zip"
-                text_filename = str(pg_index) + ".txt"
-                book_filename = '../data/raw_books/' + text_filename
-                clean_book_filename = '../data/books/' + text_filename
-                summary_filename = '../data/summaries/' + text_filename
+                zip_filename = get_zip_filename(pg_index)
+                text_filename = get_text_filename(pg_index)
+                book_filename = get_raw_book_filename(pg_index)
+                clean_book_filename = get_clean_book_filename(pg_index)
+                summary_filename = get_summary_filename(pg_index)
                 extract_book(pg_index, zip_filename,
                              text_filename, book_filename)
                 save_summary(df_summaries, new_title, summary_filename)
-                save_clean_book(book_filename, clean_book_filename)
+                save_clean_book(pg_index)
                 titles[new_title] = pg_index
                 print(new_title)
                 b_s_stats = calculate_data_stats(
@@ -188,11 +252,53 @@ def create_book_dataset():
     csvFile.close()
 
 
+# for all books listed in data_stats.csv
+# divide into chapters and save in book_chapters folder
+def test_divide_into_chapters():
+    df = pd.read_csv("data_stats.csv", sep=',', header=None)
+    for index, row in df.iterrows():
+        pg_index = row[1]
+        divide_book_into_chapters(pg_index)
+
+
+def first_lines_chapter(book_id,chapter_num):
+    book_chapter = open(get_chapter_filename(book_id,chapter_num), 'r')
+    lines = ''
+    num_lines = 0
+    if book_chapter.readable():
+        for l in book_chapter:
+            if len(l)>1:
+                lines = lines + l
+                num_lines += 1
+            if (num_lines>=2):
+                break
+    book_chapter.close()
+    return lines
+
+
 def find_book(book_title='', book_author=''):
     book_id = -1
 # if only book_title provided
 #     find book_title in list of titles
 #     print list of authors asking which author or confirming if only one found
+    if len(book_title)>0:
+        book_title = book_title.lower()
+        pg_df = pd.read_csv("../data/SPGC-metadata-2018-07-18.csv")
+        pg_df["title"] = pg_df["title"].map(lambda x: str(x).lower())
+        possible_matches = pg_df[pg_df["title"]==book_title]
+        print("Please specify which book to summarize:")
+        row_index = 0
+        for index, row in possible_matches.iterrows():
+            print(str(row_index) + ":" + row['title'] + ' by ' + row['author'] + '(' + row['id'] + ')')
+            row_index += 1
+        match_index = int(input())
+        row_index = 0
+        for index, row in possible_matches.iterrows():
+            if match_index==row_index:
+                book_title = row['title']
+                book_author = row['author']
+                book_id = row['id'][2:]
+            row_index += 1
 # if only book_author provided
 #     find book_author in list of titles
 #     print list of titles asking which title
@@ -202,4 +308,8 @@ def find_book(book_title='', book_author=''):
 #     if there is a match
 #         attempt to download book
 #         return identifier for book
-    return book_id, book_title, book_author
+    download_from_gutenberg(book_id)
+    extract_book(book_id)
+    save_clean_book(book_id)
+    num_chapters = divide_book_into_chapters(book_id)
+    return book_id, book_title, book_author, num_chapters

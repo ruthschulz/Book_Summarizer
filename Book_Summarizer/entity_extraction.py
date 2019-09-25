@@ -4,6 +4,7 @@ import spacy
 from fuzzywuzzy import fuzz
 import operator
 
+from data_download_and_stats import get_text_filename, get_chapter_filename, get_clean_book_filename
 
 entity_types = ["PERSON", "NORP", "FAC", "ORG", "GPE", "LOC", "PRODUCT",
                 "EVENT", "WORK_OF_ART", "LAW", "LANGUAGE"]
@@ -40,7 +41,8 @@ def remove_characters_from_entities(characters, entities):
     return characters, entities
 
 
-def find_entities_book(filename):
+def find_entities_book(book_id):
+    filename = get_clean_book_filename(book_id)
     nlp = spacy.load('en_core_web_sm')
     book = open(filename, 'r')
     book_text = ' '.join(book)
@@ -76,7 +78,8 @@ def find_entities_book(filename):
     return matched_characters, matched_entities
 
 
-def find_entities_chapter(filename, book_characters, book_entities):
+def find_entities_chapter(book_id, chapter, book_characters, book_entities):
+    filename = get_chapter_filename(book_id, chapter)
     nlp = spacy.load('en_core_web_sm')
     chapter = open(filename, 'r')
     chapter_text = ' '.join(chapter)
@@ -98,23 +101,23 @@ def find_entities_chapter(filename, book_characters, book_entities):
                 characters[matched_character] = characters[matched_character] + 1
             else:
                 characters[matched_character] = 1
-                print(matched_character)
-                print(ent.text)
     return characters, key_entities
 
 
 def create_sentence(entities, about_book=True, about_characters=True):
-    sentence = "The " + ("characters" if about_characters else "key terms") + " in this " + \
-        ("book" if about_book else "chapter") + " are "
-    sorted_entities = sorted(
-        entities.items(), key=operator.itemgetter(1), reverse=True)
-    num_to_print = (min(10, len(sorted_entities)-1)
+    sentence = ''
+    if (len(entities)>0):
+        sentence = "The " + ("characters" if about_characters else "key terms") + " in this " + \
+            ("book" if about_book else "chapter") + " are "
+        sorted_entities = sorted(
+            entities.items(), key=operator.itemgetter(1), reverse=True)
+        num_to_print = (min(10, len(sorted_entities)-1)
                     if about_book else min(5, len(sorted_entities)-1))
-    for entity in sorted_entities[:num_to_print-1]:
-        sentence = sentence + entity[0] + ', '
-    if (len(sorted_entities) > 1):
-        sentence = sentence + "and "
-    sentence = sentence + sorted_entities[num_to_print-1][0] + '.'
+        for entity in sorted_entities[:num_to_print-1]:
+            sentence = sentence + entity[0] + ', '
+        if (len(sorted_entities) > 1):
+            sentence = sentence + "and "
+        sentence = sentence + sorted_entities[num_to_print-1][0] + '.'
     return sentence
 
 
