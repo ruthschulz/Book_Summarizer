@@ -37,18 +37,21 @@ def calculate_data_stats(book_filename,summary_filename):
 # also saves this list to file
 # also return list of titles and summaries
 def data_list():
-  pd.set_option("display.max_colwidth", 100000) # otherwise the summaries are cropped
-  df = pd.read_csv("../data/booksummaries.txt",sep='\t',header=None)
-  pg_df = pd.read_csv("../data/SPGC-metadata-2018-07-18.csv")
-  # match summaries and books on title
-  # requires exact title, does not check author
-  # multiple books may be assigned to a summary
-  df_combined = df.merge(pg_df, left_on=2, right_on='title')
-  # save a list of the titles and authors
-  df_titles = df_combined[['title','author',3,'id']]
-  df_titles.to_csv('matched_titles.csv')
-  df_summaries = df[[2,6]]
-  return df_titles, df_summaries
+    # otherwise the summaries are cropped
+    pd.set_option("display.max_colwidth", 100000)
+    df = pd.read_csv("../data/booksummaries.txt", sep='\t', header=None)
+    df[2] = df[2].map(lambda x: x.lower())
+    pg_df = pd.read_csv("../data/SPGC-metadata-2018-07-18.csv")
+    pg_df["title"] = pg_df["title"].map(lambda x: str(x).lower())
+    # match summaries and books on title
+    # requires exact title, does not check author
+    # multiple books may be assigned to a summary
+    df_combined = df.merge(pg_df, left_on=2, right_on='title')
+    # save a list of the titles and authors
+    df_titles = df_combined[['title', 'author', 3, 'id']]
+    df_titles.to_csv('matched_titles.csv')
+    df_summaries = df[[2, 6]]
+    return df_titles, df_summaries
 
 
 # calculate_author_match(author1,author2)
@@ -117,8 +120,6 @@ def save_clean_book(book_filename,clean_book_filename):
   book = open(book_filename,'r', encoding='latin-1')
   clean_book = open(clean_book_filename,'w')
   write_lines = False
-  # TODO: some of the older books do not match this formatting
-  # and end up with no lines of text output
   for l in book:
     if (l[:12]=='*** START OF') or (l[:11]=='***START OF') or (l[:11]=='*END*THE SM'):
       write_lines = True
@@ -137,46 +138,52 @@ def save_clean_book(book_filename,clean_book_filename):
       clean_book.write(l)
     book.close()
     clean_book.close()
-  os.remove(book_filename)
-  os.rename(clean_book_filename,book_filename)
+  #os.remove(book_filename)
+  #os.rename(clean_book_filename,book_filename)
 
 
-# load info about books and summaries
-df_titles, df_summaries = data_list()
-# for each item, check if title is already in database
-# if it isn't, check if it can be downloaded
-# move to books folder
-# process book to remove metadata and license information
-shutil.rmtree('../data/books')
-shutil.rmtree('../data/summaries')
-os.makedirs('../data/books')
-os.makedirs('../data/summaries')
-titles = dict()
-stats = []
-for index, row in df_titles.iterrows():
-  new_title = row['title']
-  pg_index = row['id'][2:]
-  pg_author = row['author']
-  summaries_author = row[3]
-  if ((new_title not in titles) and (calculate_author_match(pg_author,summaries_author) > 40)):
-    file_exists = download_from_gutenberg(pg_index)
-    if (file_exists):
-      zip_filename = str(pg_index) + ".zip"
-      text_filename = str(pg_index) + ".txt"
-      book_filename = '../data/books/' + text_filename
-      clean_book_filename = '../data/books/clean-' + text_filename
-      summary_filename = '../data/summaries/' + text_filename
-      extract_book(pg_index, zip_filename, text_filename, book_filename)
-      save_summary(df_summaries, new_title, summary_filename)
-      save_clean_book(book_filename,clean_book_filename)
-      titles[new_title] = pg_index
-      print(new_title)
-      b_s_stats = calculate_data_stats(book_filename,summary_filename)
-      new_stats = [new_title,pg_index,pg_author,summaries_author]
-      new_stats.extend(b_s_stats)
-      stats.append(new_stats)
-with open('data_stats.csv', 'w') as csvFile:
-    writer = csv.writer(csvFile)
-    writer.writerows(stats)
-csvFile.close()
+def create_book_dataset():
+    # load info about books and summaries
+    df_titles, df_summaries = data_list()
+    # for each item, check if title is already in database
+    # if it isn't, check if it can be downloaded
+    # move to books folder
+    # process book to remove metadata and license information
+    if os.path.exists('../data/books'):
+        shutil.rmtree('../data/books')
+    if os.path.exists('../data/summaries'):
+        shutil.rmtree('../data/summaries')
+    if os.path.exists('../data/raw_books'):
+        shutil.rmtree('../data/raw_books')
+    os.makedirs('../data/books')
+    os.makedirs('../data/summaries')
+    os.makedirs('../data/raw_books')
+    titles = dict()
+    stats = []
+    for index, row in df_titles.iterrows():
+        new_title = row['title']
+        pg_index = row['id'][2:]
+        pg_author = row['author']
+        summaries_author = row[3]
+        if ((new_title not in titles) and (calculate_author_match(pg_author, summaries_author) > 40)):
+            file_exists = download_from_gutenberg(pg_index)
+            if (file_exists):
+                zip_filename = str(pg_index) + ".zip"    
+                text_filename = str(pg_index) + ".txt"
+                book_filename = '../data/raw_books/' + text_filename
+                clean_book_filename = '../data/books/' + text_filename
+                summary_filename = '../data/summaries/' + text_filename
+                extract_book(pg_index, zip_filename, text_filename, book_filename)
+                save_summary(df_summaries, new_title, summary_filename)
+                save_clean_book(book_filename, clean_book_filename)
+                titles[new_title] = pg_index
+                print(new_title)
+                b_s_stats = calculate_data_stats(clean_book_filename, summary_filename)
+                new_stats = [new_title, pg_index, pg_author, summaries_author]
+                new_stats.extend(b_s_stats)
+                stats.append(new_stats)
+    with open('data_stats.csv', 'w') as csvFile:
+        writer = csv.writer(csvFile)
+        writer.writerows(stats)
+    csvFile.close()
 
