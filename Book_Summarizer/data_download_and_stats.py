@@ -166,17 +166,19 @@ def create_book_dataset():
         if ((new_title not in titles) and (calculate_author_match(pg_author, summaries_author) > 40)):
             file_exists = download_from_gutenberg(pg_index)
             if (file_exists):
-                zip_filename = str(pg_index) + ".zip"    
+                zip_filename = str(pg_index) + ".zip"
                 text_filename = str(pg_index) + ".txt"
                 book_filename = '../data/raw_books/' + text_filename
                 clean_book_filename = '../data/books/' + text_filename
                 summary_filename = '../data/summaries/' + text_filename
-                extract_book(pg_index, zip_filename, text_filename, book_filename)
+                extract_book(pg_index, zip_filename,
+                             text_filename, book_filename)
                 save_summary(df_summaries, new_title, summary_filename)
                 save_clean_book(book_filename, clean_book_filename)
                 titles[new_title] = pg_index
                 print(new_title)
-                b_s_stats = calculate_data_stats(clean_book_filename, summary_filename)
+                b_s_stats = calculate_data_stats(
+                    clean_book_filename, summary_filename)
                 new_stats = [new_title, pg_index, pg_author, summaries_author]
                 new_stats.extend(b_s_stats)
                 stats.append(new_stats)
@@ -184,3 +186,20 @@ def create_book_dataset():
         writer = csv.writer(csvFile)
         writer.writerows(stats)
     csvFile.close()
+
+
+def find_book(book_title='', book_author=''):
+    book_id = -1
+# if only book_title provided
+#     find book_title in list of titles
+#     print list of authors asking which author or confirming if only one found
+# if only book_author provided
+#     find book_author in list of titles
+#     print list of titles asking which title
+# if both book_title and book_author provided
+#     find book_title in list of titles
+#     find book_author in list of authors
+#     if there is a match
+#         attempt to download book
+#         return identifier for book
+    return book_id, book_title, book_author
