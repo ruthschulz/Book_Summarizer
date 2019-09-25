@@ -268,12 +268,12 @@ def first_lines_chapter(book_id,chapter_num):
     if book_chapter.readable():
         for l in book_chapter:
             if len(l)>1:
-                lines = lines + l
+                lines = lines + l.strip('\n') + ' '
                 num_lines += 1
             if (num_lines>=2):
                 break
     book_chapter.close()
-    return lines
+    return (lines + '...\n')
 
 
 def find_book(book_title='', book_author=''):
@@ -286,6 +286,7 @@ def find_book(book_title='', book_author=''):
         pg_df = pd.read_csv("../data/SPGC-metadata-2018-07-18.csv")
         pg_df["title"] = pg_df["title"].map(lambda x: str(x).lower())
         possible_matches = pg_df[pg_df["title"]==book_title]
+        possible_matches = possible_matches[possible_matches['type']=='Text']
         print("Please specify which book to summarize:")
         row_index = 0
         for index, row in possible_matches.iterrows():
