@@ -187,7 +187,7 @@ def divide_book_into_chapters(book_id):
             previous_blank_line = False
             count_lines_in_chapter += 1
             book_chapter.write(l)
-        elif (len(l) == 1) and ((previous_blank_line == True) or (count_lines_in_chapter > 3000)):
+        elif (len(l) == 1) and ((previous_blank_line == True) or (count_lines_in_chapter >= 3000)):
             count_lines_in_chapter = 0
             count_chapters += 1
             book_chapter.close()
