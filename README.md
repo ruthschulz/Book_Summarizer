@@ -20,21 +20,24 @@ cd $repo_name
 echo "export $repo_name=${PWD}" >> ~/.bash_profile
 echo "export PYTHONPATH=$repo_name/src:${PYTHONPATH}" >> ~/.bash_profile
 source ~/.bash_profile
+```
 
 ## Requisites
 
 - All packages and software needed to build the environment
 
 #### Installation
-To install the packages above, pleae run:
+To install the packages above, please run:
 ```shell
 pip install -r requirements
 ```
 
 ## Run
 
+```
 cd Book_Summarizer
 python book_summarizer.py
+```
 
 The program will then ask you to enter the title of the book to summarize, choose from a list which book from Project Gutenberg to download, then print a summary of the book to the terminal.
 
