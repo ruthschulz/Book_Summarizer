@@ -20,7 +20,11 @@ from data_download_and_stats import find_book, first_lines_chapter
 from extractive_summarizer import find_relevant_quote
 
 
-def summarize_book(book_title, book_author=''):
+def main():
+    print("Enter book title: ")
+    book_title = str(input())
+    print("Enter author name (optional):")
+    book_author = str(input())
     # find the book title in the data base, match the author name
     # confirm whether the correct book title and author have been found
     # download the book
@@ -59,3 +63,6 @@ def summarize_book(book_title, book_author=''):
             print('Quote from segment: "' + str(q) + '"')
         # generate sentences based on context of chapter and choose most similar to chapter
         # Print generated sentence for chapter
+
+if __name__ == "__main__":
+    main()
