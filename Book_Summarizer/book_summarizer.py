@@ -15,7 +15,7 @@
 # -g for generated sentence
 
 from entity_extraction import find_entities_book, find_entities_chapter, create_sentence
-from data_download_and_stats import find_book, first_lines_chapter, process_book
+from data_download_and_stats import find_book, first_lines_chapter, process_book, get_basic_summary_filename
 from extractive_summarizer import find_relevant_quote
 import os
 import sys
@@ -23,36 +23,56 @@ from os import listdir
 from os.path import isfile, join
 
 def summarize_book(book_id, num_chapters):
+    if not os.path.exists('../data/basic_summaries'):
+        os.makedirs('../data/basic_summaries')
+    book_filename = get_basic_summary_filename(book_id)
+    basic_summary = open(book_filename, 'w')
     # Print out number of segments found in book
-    print("\nBook '" + str(book_id) + "' has been divided into " +
-          str(num_chapters) + " segments")
+    line = "Book '" + str(book_id) + "' has been divided into " + str(num_chapters) + " segments" 
+    print(line)
+    basic_summary.write(line + '\n')
     # find characters and key words for book
     book_characters, book_entities = find_entities_book(book_id)
     # Print out sentence for characters and key words
-    print(create_sentence(book_characters, about_book=True, about_characters=True))
-    print(create_sentence(book_entities,
-                          about_book=True, about_characters=False))
+    line = create_sentence(book_characters, about_book=True, about_characters=True) 
+    basic_summary.write(line + '\n')
+    print(line)
+    #print(create_sentence(book_characters, about_book=True, about_characters=True))
+    line = create_sentence(book_entities, about_book=True, about_characters=False) 
+    basic_summary.write(line + '\n')
+    print(line)
     # for each chapter
     for chapter in range(num_chapters):
-        print("\nSegment " + str(chapter) + ", starting:")
+        line = "\nSegment " + str(chapter) + ", starting:"
+        basic_summary.write(line + '\n')
+        print(line)
         # find first two non-empty lines of chapter
         # Print first two non-empty lines of chapter
-        print(first_lines_chapter(book_id, chapter), end='')
+        line = first_lines_chapter(book_id, chapter)
+        basic_summary.write(line)
+        print(line, end='')
         # find characters and key words
         chapter_characters, chapter_entities = find_entities_chapter(
             book_id, chapter, book_characters, book_entities)
         # Print sentence for characters and key words from chapter
-        print(create_sentence(chapter_characters,
-                              about_book=False, about_characters=True))
-        print(create_sentence(chapter_entities,
-                              about_book=False, about_characters=False))
+        line = create_sentence(chapter_characters, about_book=False, about_characters=True)
+        if (len(line)>0):
+            basic_summary.write(line + '\n')
+            print(line)
+        line = create_sentence(chapter_entities, about_book=False, about_characters=False)
+        if (len(line)>0):
+            basic_summary.write(line + '\n')
+            print(line)
         # find quote using extractive summary techniques
         quote = find_relevant_quote(book_id, chapter)
         # Print quote from chapter
         for q in quote:
-            print('Quote from segment: "' + str(q) + '"')
+            line = 'Quote from segment: "' + str(q) + '"' 
+            basic_summary.write(line + '\n')
+            print(line)
         # generate abstractive summary based on context of chapter
         # Print abstractive summary for chapter
+    basic_summary.close()
 
 
 def main():
@@ -63,6 +83,7 @@ def main():
     os.system('cls||clear')
     print("Book Summarizer:")
     print("Understanding your books for you")
+    print()
     # if no arguments given, all raw books in raw_books folder will be summarized
     # otherwise argument following book_summarizer.py should be book_id,
     # and book text file named book_id.txt should be found in raw_books folder

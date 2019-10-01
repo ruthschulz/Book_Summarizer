@@ -26,6 +26,9 @@ def get_chapter_filename(book_id, chapter_num):
 def get_summary_filename(book_id):
     return '../data/summaries/' + str(book_id) + '.txt'
 
+def get_basic_summary_filename(book_id):
+    return '../data/basic_summaries/' + str(book_id) + '.txt'
+
 # calculate_data_stats(book_filename,summary_filename)
 #
 # calculates number of sentences, number of words, file size
