@@ -109,12 +109,17 @@ def download_from_gutenberg(pg_id):
 # unzip the book and move to books folder
 # remove zip file afterwards
 def extract_book(pg_index, zip_filename='', text_filename='', book_filename=''):
+    if not os.path.exists('../data/raw_books'):
+        os.makedirs('../data/raw_books')
     if len(zip_filename)==0:
-        zip_filename = str(pg_index) + ".zip"
+        zip_filename = get_zip_filename(pg_index)
+        #zip_filename = str(pg_index) + ".zip"
     if len(text_filename)==0:
-        text_filename = str(pg_index) + ".txt"
+        text_filename = get_text_filename(pg_index)
+        #text_filename = str(pg_index) + ".txt"
     if len(book_filename)==0:
-        book_filename = '../data/raw_books/' + text_filename
+        book_filename = get_raw_book_filename(pg_index)
+        #book_filename = '../data/raw_books/' + text_filename
     with ZipFile(zip_filename, 'r') as zipObj:
         zipObj.extractall()
     if os.path.exists(text_filename):
@@ -130,6 +135,8 @@ def extract_book(pg_index, zip_filename='', text_filename='', book_filename=''):
 #
 # saves the summary to the summary folder
 def save_summary(df_summaries, new_title, summary_filename):
+    if not os.path.exists('../data/summaries'):
+        os.makedirs('../data/summaries')
     new_summary = df_summaries[df_summaries[2] == new_title][6].to_string()[6:]
     with open(summary_filename, 'w') as f:
         f.write(new_summary)
@@ -140,6 +147,8 @@ def save_summary(df_summaries, new_title, summary_filename):
 # removes information about project gutenberg from the book
 # replaces the book file with the cleaned book
 def save_clean_book(pg_index):
+    if not os.path.exists('../data/books'):
+        os.makedirs('../data/books')
     text_filename = get_text_filename(pg_index)
     book_filename = get_raw_book_filename(pg_index)
     clean_book_filename = get_clean_book_filename(pg_index)
@@ -176,6 +185,8 @@ def save_clean_book(pg_index):
 # as there are often two double spaces at the start of a chapter
 # limits chapters to the end of the next paragraph after 3000 lines
 def divide_book_into_chapters(book_id):
+    if not os.path.exists('../data/book_chapters'):
+        os.makedirs('../data/book_chapters')
     book_filename = get_clean_book_filename(book_id)
     count_chapters = 0
     count_lines_in_chapter = 0
@@ -314,3 +325,12 @@ def find_book(book_title='', book_author=''):
     save_clean_book(book_id)
     num_chapters = divide_book_into_chapters(book_id)
     return book_id, book_title, book_author, num_chapters
+
+def process_book(book_id):
+    num_chapters = 0
+    if not os.path.isfile(get_raw_book_filename(book_id)):
+        book_id=-1
+    if book_id>=0:
+        save_clean_book(book_id)
+        num_chapters = divide_book_into_chapters(book_id)
+    return book_id, num_chapters

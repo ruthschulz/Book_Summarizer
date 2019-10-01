@@ -1,40 +1,30 @@
 # entry point for calling the book summarizer
 # command line interface
-# requrires title and author
-# [or just title and confirm which author]
-# [or just author and confirm which title]
+# if no arguments given, all raw books in raw_books folder will be summarized
+# otherwise argument following book_summarizer.py should be book_id,
+# and book text file named book_id.txt should be found in raw_books folder
 # options: all = book characters, key terms, number of chapters / segments;
 # chapter first line, characters, key words, quote, generated sentence from chapter context
 # other options could remove these
 # no additional tag -> print all information
 # if any tags, print only information specified by tags
-# or somehow allow remove all except for specified by tags?
-# c for characters
-# k for key terms
-# q for quote
-# f for first line
-# g for generated sentence
+# -c for characters
+# -k for key terms
+# -q for quote
+# -f for first line
+# -g for generated sentence
 
 from entity_extraction import find_entities_book, find_entities_chapter, create_sentence
-from data_download_and_stats import find_book, first_lines_chapter
+from data_download_and_stats import find_book, first_lines_chapter, process_book
 from extractive_summarizer import find_relevant_quote
+import os
+import sys
+from os import listdir
+from os.path import isfile, join
 
-
-def main():
-    print("Enter book title: ")
-    book_title = str(input())
-    print("Enter author name (optional):")
-    book_author = str(input())
-    # find the book title in the data base, match the author name
-    # confirm whether the correct book title and author have been found
-    # download the book
-    # Print book title and author
-    # break down into chapters / segments
-    book_id, book_title, book_author, num_chapters = find_book(
-        book_title, book_author)
-    print('\n' + str(book_id) + ':' + book_title + ' by ' + book_author)
+def summarize_book(book_id, num_chapters):
     # Print out number of segments found in book
-    print(book_title + " has been divided into " +
+    print("\nBook '" + str(book_id) + "' has been divided into " +
           str(num_chapters) + " segments")
     # find characters and key words for book
     book_characters, book_entities = find_entities_book(book_id)
@@ -61,8 +51,37 @@ def main():
         # Print quote from chapter
         for q in quote:
             print('Quote from segment: "' + str(q) + '"')
-        # generate sentences based on context of chapter and choose most similar to chapter
-        # Print generated sentence for chapter
+        # generate abstractive summary based on context of chapter
+        # Print abstractive summary for chapter
+
+
+def main():
+    book_id = -1
+    if len(sys.argv)>1:
+        if sys.argv[1][0]!='-':
+            book_id = int(sys.argv[1])
+    os.system('cls||clear')
+    print("Book Summarizer:")
+    print("Understanding your books for you")
+    # if no arguments given, all raw books in raw_books folder will be summarized
+    # otherwise argument following book_summarizer.py should be book_id,
+    # and book text file named book_id.txt should be found in raw_books folder
+    if (book_id==-1):
+        book_files = [f for f in listdir('../data/raw_books') if isfile(join('../data/raw_books', f))]
+        for f in book_files:
+            print(f.strip('.txt'),end=', ')
+        for f in book_files:
+            book_id=int(f.strip('.txt'))
+            # break down into chapters / segments, then summarize book
+            book_id,num_chapters = process_book(book_id)
+            if (book_id!=-1):
+                summarize_book(book_id,num_chapters)
+    else:
+        # break down into chapters / segments, then summarize book
+        book_id,num_chapters = process_book(book_id)
+        if (book_id!=-1):
+            summarize_book(book_id,num_chapters)
+
 
 if __name__ == "__main__":
     main()
