@@ -46,7 +46,7 @@ def combine_extractive_summaries(book_id):
     chapter = 0
     chapter_filename = '../data/extractive_summaries/' + \
         str(book_id) + '-' + str(chapter) + '.txt'
-    combined_filename = '../data/combined_summaries/' + \
+    combined_filename = '../data/extractive_summaries/' + \
         str(book_id) + '.txt'
     path = pathlib.Path(chapter_filename)
     combined_summary = open(combined_filename, 'w')
@@ -115,7 +115,7 @@ def create_extractive_summary_book(book_id, size, summarizer=LuhnSummarizer()):
         chapter_filename = '../data/book_chapters/' + \
             str(book_id) + '-' + str(chapter) + '.txt'
         path = pathlib.Path(chapter_filename)
-
+    combine_extractive_summaries(book_id)
 
 # for all books listed in data_stats.csv
 # create extractive summary using sumy standard summarizer Luhn

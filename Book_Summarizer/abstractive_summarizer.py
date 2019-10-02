@@ -97,11 +97,12 @@ def tokenize_chapter_summaries(book_id):
     book_summary.close()
 
 
-# adapted from Ondřej Dušek
+# adapted from:
+# https://github.com/ufal/mtmonkey/blob/master/worker/src/util/fileprocess.py
 def detokenize_summary(filename_in,filename_out):
     file_in = open(filename_in, 'r')
     file_out = open(filename_out, 'w')
-    #fh_in, fh_out = open_handles(filenames, encoding)
+    lines = []
     for line in file_in:
         line = line.rstrip('\r\n')
         line = line.replace('<s> summary </s>','')
@@ -111,16 +112,16 @@ def detokenize_summary(filename_in,filename_out):
         line = line.replace('<sec>','\n')
         line = line.replace('<stop>','')
         line = line.replace('<pad>','')
-        #print(line)
         line = detokenize_line(line)
         file_out.write(line)
-        print(line)
-        #print()
-        #print(fh_out, line)
+        lines.append(line)
     file_in.close()
     file_out.close()
+    print(len(lines))
+    return lines
 
-
+# adapted from:
+# https://github.com/ufal/mtmonkey/blob/master/worker/src/util/detokenize.py
 def detokenize_line(line):
     """\
     Detokenize the given text using current settings.
@@ -212,5 +213,5 @@ def create_abstractive_summary_book(book_id):
     os.chdir('../Book_Summarizer/Book_Summarizer')
     # process abstractive summary summaries.txt into abstractive summary
     # (detokenize)
-    detokenize_summary('../../nats_results/summaries.txt',get_abstractive_summary_filename(book_id))
+    return(detokenize_summary('../../nats_results/summaries.txt',get_abstractive_summary_filename(book_id)))
 

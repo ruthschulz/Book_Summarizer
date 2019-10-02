@@ -3,8 +3,9 @@
 import spacy
 from fuzzywuzzy import fuzz
 import operator
+import os
 
-from data_download_and_stats import get_text_filename, get_chapter_filename, get_clean_book_filename
+from data_download_and_stats import get_text_filename, get_chapter_filename, get_clean_book_filename, get_key_concept_summary_filename
 
 entity_types = ["PERSON", "NORP", "FAC", "ORG", "GPE", "LOC", "PRODUCT",
                 "EVENT", "WORK_OF_ART", "LAW", "LANGUAGE"]
@@ -104,21 +105,50 @@ def find_entities_chapter(book_id, chapter, book_characters, book_entities):
     return characters, key_entities
 
 
-def create_sentence(entities, about_book=True, about_characters=True):
+def create_sentence(entities, about_book=True, about_characters=True, chapter=-1):
     sentence = ''
     if (len(entities)>0):
-        sentence = "The " + ("characters" if about_characters else "key terms") + " in this " + \
-            ("book" if about_book else "chapter") + " are "
+        sentence = ("Book " if about_book else "Chapter " + str(chapter) + " ") + \
+            ("characters: " if about_characters else "key terms: ")
+        #sentence = "The " + ("characters" if about_characters else "key terms") + " in this " + \
+        #    ("book" if about_book else "chapter") + " are "
         sorted_entities = sorted(
             entities.items(), key=operator.itemgetter(1), reverse=True)
         num_to_print = (min(10, len(sorted_entities)-1)
                     if about_book else min(5, len(sorted_entities)-1))
         for entity in sorted_entities[:num_to_print-1]:
             sentence = sentence + entity[0] + ', '
-        if (len(sorted_entities) > 1):
-            sentence = sentence + "and "
+        #if (len(sorted_entities) > 1):
+        #    sentence = sentence + "and "
         sentence = sentence + sorted_entities[num_to_print-1][0] + '.'
     return sentence
+
+
+def create_key_concept_summary_book(book_id,num_chapters):
+    if not os.path.exists('../data/key_concept_summaries'):
+        os.makedirs('../data/key_concept_summaries')
+    summary_filename = get_key_concept_summary_filename(book_id)
+    basic_summary = open(summary_filename, 'w')
+    # find characters and key words for book
+    book_characters, book_entities = find_entities_book(book_id)
+    # Print out sentence for characters and key words
+    line = create_sentence(book_characters, about_book=True, about_characters=True) 
+    basic_summary.write(line + '\n')
+    line = create_sentence(book_entities, about_book=True, about_characters=False) 
+    basic_summary.write(line + '\n')
+    # for each chapter
+    for chapter in range(num_chapters):
+        # find characters and key words
+        chapter_characters, chapter_entities = find_entities_chapter(
+            book_id, chapter, book_characters, book_entities)
+        # Print sentence for characters and key words from chapter
+        line = create_sentence(chapter_characters, about_book=False, about_characters=True, chapter=chapter)
+        if (len(line)>0):
+            basic_summary.write(line + '\n')
+        line = create_sentence(chapter_entities, about_book=False, about_characters=False, chapter=chapter)
+        if (len(line)>0):
+            basic_summary.write(line + '\n')
+    basic_summary.close()
 
 
 def test_entity_extraction_sentences():

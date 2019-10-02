@@ -26,8 +26,8 @@ def get_chapter_filename(book_id, chapter_num):
 def get_summary_filename(book_id):
     return '../data/summaries/' + str(book_id) + '.txt'
 
-def get_basic_summary_filename(book_id):
-    return '../data/basic_summaries/' + str(book_id) + '.txt'
+def get_complete_summary_filename(book_id):
+    return '../data/complete_summaries/' + str(book_id) + '.txt'
 
 def get_extractive_summary_filename(book_id, chapter_num):
     return '../data/extractive_summaries/' + str(book_id) + '-' + str(chapter_num) + '.txt'
@@ -37,6 +37,9 @@ def get_abstractive_summary_filename(book_id, chapter_num=-1):
         return '../data/abstractive_summaries/' + str(book_id) + '.txt'
     else:
         return '../data/abstractive_summaries/' + str(book_id) + '-' + str(chapter_num) + '.txt'
+
+def get_key_concept_summary_filename(book_id):
+    return '../data/key_concept_summaries/' + str(book_id) + '.txt'
 
 # calculate_data_stats(book_filename,summary_filename)
 #
