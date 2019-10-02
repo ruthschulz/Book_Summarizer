@@ -68,7 +68,7 @@ def tokenize_file(file_in,file_out):
         book_text = book_text[:1000000]
     # tokenize using spacy
     # add <s>, </s>, and <sec> tags
-    processed_book = tokenize_book(book_text)
+    tokenized_book = tokenize_book(book_text)
     processed_book = open(file_out,'w')
     processed_book.write(tokenized_book)
     processed_book.close()
@@ -212,5 +212,5 @@ def create_abstractive_summary_book(book_id):
     os.chdir('../Book_Summarizer/Book_Summarizer')
     # process abstractive summary summaries.txt into abstractive summary
     # (detokenize)
-    detokenize_summary('../../nats_results/summeries.txt',get_abstractive_summary_filename(book_id))
+    detokenize_summary('../../nats_results/summaries.txt',get_abstractive_summary_filename(book_id))
 
