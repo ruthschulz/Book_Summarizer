@@ -48,10 +48,10 @@ def create_complete_summary_book(book_id, num_chapters, chapter_abstractive_summ
         chapter_characters, chapter_entities = find_entities_chapter(
             book_id, chapter, book_characters, book_entities)
         # Print sentence for characters and key words from chapter
-        line = create_sentence(chapter_characters, about_book=False, about_characters=True)
+        line = create_sentence(chapter_characters, about_book=False, about_characters=True, chapter=chapter)
         if (len(line)>0):
             complete_summary.write(line + '\n')
-        line = create_sentence(chapter_entities, about_book=False, about_characters=False)
+        line = create_sentence(chapter_entities, about_book=False, about_characters=False, chapter=chapter)
         if (len(line)>0):
             complete_summary.write(line + '\n')
         # find quote using extractive summary techniques
