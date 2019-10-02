@@ -70,6 +70,8 @@ def combine_extractive_summaries(book_id):
 # (refers to file break down, may not actually be that chapter in the book)
 # summarizer is the sumy summarizer that will create the summary
 def create_extractive_summary_chapter(book_id, chapter, summarizer, size):
+    if not os.path.exists('../data/extractive_summaries'):
+        os.makedirs('../data/extractive_summaries')
     chapter_filename = '../data/book_chapters/' + \
         str(book_id) + '-' + str(chapter) + '.txt'
     parser = PlaintextParser.from_file(chapter_filename, Tokenizer("english"))
@@ -102,7 +104,7 @@ def find_relevant_quote(book_id, chapter):
 # iterates through chapters of book that have already been saved in the book_chapters folder
 # calling create_extractive_summary_segment
 # to put together a complete extractive summary of the book
-def create_extractive_summary_book(book_id, summarizer, size):
+def create_extractive_summary_book(book_id, size, summarizer=LuhnSummarizer()):
     chapter_filename = '../data/book_chapters/' + \
         str(book_id) + '-' + str(0) + '.txt'
     path = pathlib.Path(chapter_filename)
@@ -123,7 +125,7 @@ def test_create_luhn_extractive_summaries():
     for index, row in df.iterrows():
         pg_index = row[1]
         print(pg_index)
-        create_extractive_summary_book(pg_index, summarizer, 3)
+        create_extractive_summary_book(pg_index, 3, summarizer)
 
 
 # for all books listed in data_stats.csv
@@ -134,7 +136,7 @@ def test_create_lsa_extractive_summaries():
     for index, row in df.iterrows():
         pg_index = row[1]
         print(pg_index)
-        create_extractive_summary_book(pg_index, summarizer, 3)
+        create_extractive_summary_book(pg_index, 3, summarizer)
 
 
 # for all books listed in data_stats.csv
@@ -145,7 +147,7 @@ def test_create_tr_extractive_summaries():
     for index, row in df.iterrows():
         pg_index = row[1]
         print(pg_index)
-        create_extractive_summary_book(pg_index, summarizer, 3)
+        create_extractive_summary_book(pg_index, 3, summarizer)
 
 
 # for all books listed in data_stats.csv
@@ -156,7 +158,7 @@ def test_create_lr_extractive_summaries():
     for index, row in df.iterrows():
         pg_index = row[1]
         print(pg_index)
-        create_extractive_summary_book(pg_index, summarizer, 3)
+        create_extractive_summary_book(pg_index, 3, summarizer)
 
 
 # for all books listed in data_stats.csv

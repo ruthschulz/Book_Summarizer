@@ -17,6 +17,7 @@
 from entity_extraction import find_entities_book, find_entities_chapter, create_sentence
 from data_download_and_stats import find_book, first_lines_chapter, process_book, get_basic_summary_filename
 from extractive_summarizer import find_relevant_quote
+from abstractive_summarizer import create_abstractive_summary_book
 import os
 import sys
 from os import listdir
@@ -37,7 +38,6 @@ def summarize_book(book_id, num_chapters):
     line = create_sentence(book_characters, about_book=True, about_characters=True) 
     basic_summary.write(line + '\n')
     print(line)
-    #print(create_sentence(book_characters, about_book=True, about_characters=True))
     line = create_sentence(book_entities, about_book=True, about_characters=False) 
     basic_summary.write(line + '\n')
     print(line)
@@ -70,8 +70,9 @@ def summarize_book(book_id, num_chapters):
             line = 'Quote from segment: "' + str(q) + '"' 
             basic_summary.write(line + '\n')
             print(line)
-        # generate abstractive summary based on context of chapter
-        # Print abstractive summary for chapter
+    # generate abstractive summary based on context of chapter
+    create_abstractive_summary_book(book_id)
+    # Print abstractive summary for chapter
     basic_summary.close()
 
 
@@ -84,6 +85,7 @@ def main():
     print("Book Summarizer:")
     print("Understanding your books for you")
     print()
+    #process_file('../data/basic_summaries/'+str(book_id)+'.txt', '../data/basic_summaries/processed-'+str(book_id)+'.txt')
     # if no arguments given, all raw books in raw_books folder will be summarized
     # otherwise argument following book_summarizer.py should be book_id,
     # and book text file named book_id.txt should be found in raw_books folder
