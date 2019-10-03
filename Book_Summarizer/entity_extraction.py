@@ -45,7 +45,7 @@ def remove_characters_from_entities(characters, entities):
 
 def find_entities_book(book_id):
     filename = get_clean_book_filename(book_id)
-    nlp = spacy.load('en_core_web_lg')
+    nlp = spacy.load('en_core_web_sm')
     book = open(filename, 'r')
     book_text = ' '.join(book)
     if len(book_text) > 1000000:

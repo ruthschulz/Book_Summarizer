@@ -109,7 +109,7 @@ def compare_summaries(book_id):
     analysis_data.append(['extractive', summary_doc.similarity(extractive_doc), rouge_n(summary_sentences, extractive_sentences), cosine_similarity(summary_model, extractive_model)])
     analysis_data.append(['abstractive', summary_doc.similarity(abstractive_doc), rouge_n(summary_sentences, abstractive_sentences), cosine_similarity(summary_model, abstractive_model)])
     analysis_data.append(['combined', summary_doc.similarity(complete_doc), rouge_n(summary_sentences, complete_sentences), cosine_similarity(summary_model, complete_model)])
-    with open('../data/analysis/'+ str(book_id) + '.csv', 'w') as csvFile:
+    with open('../results/analysis/'+ str(book_id) + '.csv', 'w') as csvFile:
         writer = csv.writer(csvFile)
         writer.writerows(analysis_data)
     csvFile.close()

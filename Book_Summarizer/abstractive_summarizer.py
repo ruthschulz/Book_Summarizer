@@ -10,6 +10,8 @@ import pathlib
 from regex import Regex, UNICODE, IGNORECASE
 from extractive_summarizer import create_extractive_summary_book
 from data_download_and_stats import get_chapter_filename, get_extractive_summary_filename, get_abstractive_summary_filename
+from nats.pointer_generator_network.model import *
+import argparse
 
 CONTRACTIONS = (r'^\p{Alpha}+(\'(ll|ve|re|[dsm])|n\'t)$')
 CURRENCY_OR_INIT_PUNCT = (r'^[\p{Sc}\(\[\{\¿\¡]+$')
@@ -199,12 +201,23 @@ def create_abstractive_summary_book(book_id):
     # (lower case, remove special characters, tokenize)
     tokenize_chapter_summaries(book_id)
     # run abstractive summarizer
-    if not os.path.exists('../../sum_data'):
-        os.makedirs('../../sum_data')
-    shutil.copyfile(get_abstractive_summary_filename(book_id), '../../sum_data/test.txt')
-    os.chdir('../../LeafNATS')
-    os.system('python run.py --task beam')
-    os.chdir('../Book_Summarizer/Book_Summarizer')
+    if not os.path.exists('sum_data'):
+        os.makedirs('sum_data')
+    shutil.copyfile(get_abstractive_summary_filename(book_id), 'sum_data/test.txt')
+    argparser = argparse.ArgumentParser()
+    parser.add_argument('--data_dir', default='sum_data/',
+                    help='directory that store the data.')
+    parser.add_argument('--task', default='train',
+                    help='train | validate | rouge | beam')
+    parser.add_argument('--file_test', default='test.txt', help='test data')
+    parser.add_argument('--test_batch_size', type=int, default=1,
+                    help='batch size for beam search.')
+    parser.add_argument('--use_optimal_model', type=str2bool,
+                    default=True, help='Do you want to use the best model?')
+    parser.add_argument('--model_optimal_key', default='0,0', help='epoch,batch')
+    args = argparser.parse_args([])
+    model = modelPointerGenerator(args)
+    model.test()
     # process abstractive summary summaries.txt into abstractive summary
     # (detokenize)
-    return(detokenize_summary('../../nats_results/summaries.txt',get_abstractive_summary_filename(book_id)))
+    return(detokenize_summary('nats_results/summaries.txt',get_abstractive_summary_filename(book_id)))
