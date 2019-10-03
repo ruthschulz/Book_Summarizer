@@ -28,6 +28,7 @@ from sumy.nlp.tokenizers import Tokenizer
 from sumy.models import TfDocumentModel
 from sumy.evaluation import cosine_similarity, rouge_n
 import csv
+import argparse
 
 
 def create_complete_summary_book(book_id, num_chapters, chapter_abstractive_summaries):
@@ -71,12 +72,17 @@ def create_complete_summary_book(book_id, num_chapters, chapter_abstractive_summ
     complete_summary.close()
 
 
-def summarize_book(book_id, num_chapters):
-    create_key_concept_summary_book(book_id,num_chapters)
-    create_extractive_summary_book(book_id,3)
-    chapter_abstractive_summaries = create_abstractive_summary_book(book_id)
-    create_complete_summary_book(book_id, num_chapters, chapter_abstractive_summaries)
-    compare_summaries(book_id)
+def summarize_book(book_id, num_chapters, args):
+    if args.entity:
+        create_key_concept_summary_book(book_id,num_chapters)
+    if args.extractive:
+        create_extractive_summary_book(book_id,3)
+    if args.abstractive or args.combined:
+        chapter_abstractive_summaries = create_abstractive_summary_book(book_id)
+    if args.combined:
+        create_complete_summary_book(book_id, num_chapters, chapter_abstractive_summaries)
+    if args.entity and args.extractive and args.abstractive and args.combined:
+        compare_summaries(book_id)
 
 def load_summary(filename):
     nlp = spacy.load('en_core_web_lg')
@@ -102,7 +108,7 @@ def compare_summaries(book_id):
     analysis_data.append(['key concepts', summary_doc.similarity(key_concepts_doc), rouge_n(summary_sentences, key_concepts_sentences), cosine_similarity(summary_model, key_concepts_model)])
     analysis_data.append(['extractive', summary_doc.similarity(extractive_doc), rouge_n(summary_sentences, extractive_sentences), cosine_similarity(summary_model, extractive_model)])
     analysis_data.append(['abstractive', summary_doc.similarity(abstractive_doc), rouge_n(summary_sentences, abstractive_sentences), cosine_similarity(summary_model, abstractive_model)])
-    analysis_data.append(['complete', summary_doc.similarity(complete_doc), rouge_n(summary_sentences, complete_sentences), cosine_similarity(summary_model, complete_model)])
+    analysis_data.append(['combined', summary_doc.similarity(complete_doc), rouge_n(summary_sentences, complete_sentences), cosine_similarity(summary_model, complete_model)])
     with open('../data/analysis/'+ str(book_id) + '.csv', 'w') as csvFile:
         writer = csv.writer(csvFile)
         writer.writerows(analysis_data)
@@ -110,28 +116,32 @@ def compare_summaries(book_id):
 
 
 def main():
-    book_id = -1
-    if len(sys.argv)>1:
-        if sys.argv[1][0]!='-':
-            book_id = int(sys.argv[1])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', type=int, default=-1, 
+            help='create a summary of a given book text file, indicated by number')
+    parser.add_argument("-entity", help="create an entity summary of the book", action="store_true")
+    parser.add_argument("-extractive", help="create an extractive summary of the book", action="store_true")
+    parser.add_argument("-abstractive", help="create an abstractive summary of the book", action="store_true")
+    parser.add_argument("-combined", help="create a combined summary of the book", action="store_true")
+    args = parser.parse_args()
     # if no arguments given, all raw books in raw_books folder will be summarized
     # otherwise argument following book_summarizer.py should be book_id,
     # and book text file named book_id.txt should be found in raw_books folder
     if not os.path.exists('../results'):
         os.makedirs('../results')
-    if (book_id==-1):
+    if (args.b==-1):
         book_files = [f for f in listdir('../data/raw_books') if isfile(join('../data/raw_books', f))]
         for f in book_files:
             book_id=int(f.strip('.txt'))
             # break down into chapters / segments, then summarize book
             book_id,num_chapters = process_book(book_id)
             if (book_id!=-1):
-                summarize_book(book_id,num_chapters)
+                summarize_book(book_id,num_chapters, args)
     else:
         # break down into chapters / segments, then summarize book
-        book_id,num_chapters = process_book(book_id)
+        book_id,num_chapters = process_book(args.b)
         if (book_id!=-1):
-            summarize_book(book_id,num_chapters)
+            summarize_book(book_id,num_chapters, args)
 
 
 if __name__ == "__main__":
