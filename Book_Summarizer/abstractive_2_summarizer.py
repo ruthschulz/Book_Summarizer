@@ -9,7 +9,7 @@ import spacy
 import pathlib
 from regex import Regex, UNICODE, IGNORECASE
 from extractive_summarizer import create_extractive_summary_book
-from data_download_and_stats import get_chapter_filename, get_extractive_summary_filename, get_abstractive_summary_filename
+from data_download_and_stats import get_clean_book_filename, get_abstractive_2_summary_filename
 #from nats.pointer_generator_network.model import *
 import argparse
 
@@ -19,42 +19,8 @@ NOPRESPACE_PUNCT = (r'^[\,\.\?\!\:\;\\\%\}\]\)]+$')
 FINAL_PUNCT = (r'([\.!?])([\'\"\)\]\p{Pf}\%])*$')
 
 
-def tokenize_book(input_data):
-    nlp = spacy.load('en_core_web_sm', disable=['tagger', 'ner'])
-    article = input_data
-    summary = 'summary'
-    title = 'title'
-    if article == None or summary == None or title == None:
-        return ''
-    article = nlp(article)
-    summary = nlp(summary)
-    title = nlp(title)
-    sen_arr = []
-    for sen in article.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    article = ' '.join(sen_arr)
-    sen_arr = []
-    for sen in summary.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        sen = ['<s>']+sen+['</s>']
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    summary = ' '.join(sen_arr)
-    sen_arr = []
-    for sen in title.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        sen = ['<s>']+sen+['</s>']
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    title = ' '.join(sen_arr)
-    sen_arr = [title, summary, article]
-    return title + summary + '<sec>' + article
-
-
-def tokenize_file(file_in,file_out):
-    # book may also be extractive summary
+def process_text_in(file_in,file_out):
+    # text may be book or previous level abstractive summary
     book = open(file_in, 'rb')
     book_text = ''
     # remove special characters and make lower case
@@ -64,39 +30,48 @@ def tokenize_file(file_in,file_out):
     book.close()
     if len(book_text) > 1000000:
         book_text = book_text[:1000000]
-    # tokenize using spacy and add <s>, </s>, and <sec> tags
-    tokenized_book = tokenize_book(book_text)
+    nlp = spacy.load('en_core_web_sm', disable=['tagger', 'ner'])
+    summary = 'summary'
+    title = 'title'
+    if book_text == None or summary == None or title == None:
+        return ''
+    # break down article into 400 token chunks
     processed_book = open(file_out,'w')
-    processed_book.write(tokenized_book)
+    summary = nlp(summary)
+    sen_arr = []
+    for sen in summary.sents:
+        sen = [k.text for k in sen if '\n' not in k.text]
+        sen = ['<s>']+sen+['</s>']
+        sen = ' '.join(sen)
+        sen_arr.append(sen)
+    summary = ' '.join(sen_arr)
+    title = nlp(title)
+    sen_arr = []
+    for sen in title.sents:
+        sen = [k.text for k in sen if '\n' not in k.text]
+        sen = ['<s>']+sen+['</s>']
+        sen = ' '.join(sen)
+        sen_arr.append(sen)
+    title = ' '.join(sen_arr)
+    whole_article = nlp(book_text)
+    sen_arr = []
+    curr_len = 0
+    for sen in whole_article.sents:
+        sen = [k.text for k in sen if '\n' not in k.text]
+        curr_len += len(sen)
+        sen = ' '.join(sen)
+        sen_arr.append(sen)
+        if curr_len>400:
+            article = ' '.join(sen_arr)
+            processed_book.write(title + summary + '<sec>' + article)
+            processed_book.write('\n')
+            sen_arr = []
     processed_book.close()
-
-
-def tokenize_chapter_summaries(book_id):
-    if not os.path.exists('../results/abstractive_summaries'):
-        os.makedirs('../results/abstractive_summaries')
-    chapter = 0
-    extractive_summary_filename = get_extractive_summary_filename(book_id,chapter)
-    abstractive_summary_filename = get_abstractive_summary_filename(book_id,chapter)
-    book_abstractive_summary_filename = get_abstractive_summary_filename(book_id)
-    path = pathlib.Path(extractive_summary_filename)
-    book_summary = open(book_abstractive_summary_filename, 'w')
-    while path.exists():
-        tokenize_file(extractive_summary_filename, abstractive_summary_filename)
-        chapter_summary = open(abstractive_summary_filename,'r')
-        for l in chapter_summary:
-            book_summary.write(l)
-        book_summary.write('\n')
-        chapter_summary.close()
-        chapter += 1
-        extractive_summary_filename = get_extractive_summary_filename(book_id,chapter)
-        abstractive_summary_filename = get_abstractive_summary_filename(book_id,chapter)
-        path = pathlib.Path(extractive_summary_filename)
-    book_summary.close()
 
 
 # adapted from:
 # https://github.com/ufal/mtmonkey/blob/master/worker/src/util/fileprocess.py
-def detokenize_summary(filename_in,filename_out):
+def process_text_out(filename_in,filename_out):
     file_in = open(filename_in, 'r')
     file_out = open(filename_out, 'w')
     lines = []
@@ -114,7 +89,6 @@ def detokenize_summary(filename_in,filename_out):
         lines.append(line)
     file_in.close()
     file_out.close()
-    return lines
 
 # adapted from:
 # https://github.com/ufal/mtmonkey/blob/master/worker/src/util/detokenize.py
@@ -194,16 +168,26 @@ def detokenize_line(line):
     return text
 
 
-def create_abstractive_summary_book(book_id):
-    # create extractive summaries for chapters
-    create_extractive_summary_book(book_id, 5)
-    # process extractive summaries into test.txt for input to abstractive summarizer
-    # (lower case, remove special characters, tokenize)
-    tokenize_chapter_summaries(book_id)
-    # run abstractive summarizer
+def create_abstractive_2_summary_book(book_id):
+    if not os.path.exists('../results/abstractive_2_summaries'):
+        os.makedirs('../results/abstractive_2_summaries')
     if not os.path.exists('../sum_data'):
         os.makedirs('../sum_data')
-    shutil.copyfile(get_abstractive_summary_filename(book_id), '../sum_data/test.txt')
+    process_text_in(get_clean_book_filename(book_id),'../sum_data/test.txt')
+    call_abstractive_summarizer()
+    # process abstractive summary summaries.txt into abstractive summary
+    # (detokenize)
+    process_text_out('../nats_results/summaries.txt',get_abstractive_2_summary_filename(book_id,0))
+    process_text_in(get_abstractive_2_summary_filename(book_id,0),'../sum_data/test.txt')
+    call_abstractive_summarizer()
+    # process abstractive summary summaries.txt into abstractive summary
+    # (detokenize)
+    process_text_out('../nats_results/summaries.txt',get_abstractive_2_summary_filename(book_id,1))
+    shutil.copyfile(get_abstractive_summary_filename(book_id,1), get_abstractive_summary_filename(book_id,-1))
+    
+
+
+def call_abstractive_summarizer():
     parser = argparse.ArgumentParser()
     '''
     Use in the framework and cannot remove.
@@ -296,6 +280,3 @@ def create_abstractive_summary_book(book_id):
     args = parser.parse_args([])
     model = modelPointerGenerator(args)
     model.test()
-    # process abstractive summary summaries.txt into abstractive summary
-    # (detokenize)
-    return(detokenize_summary('../nats_results/summaries.txt',get_abstractive_summary_filename(book_id)))

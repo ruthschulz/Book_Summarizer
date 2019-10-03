@@ -15,9 +15,10 @@
 # -g for generated sentence
 
 from entity_extraction import find_entities_book, find_entities_chapter, create_sentence, create_key_concept_summary_book
-from data_download_and_stats import first_lines_chapter, process_book, get_complete_summary_filename, get_key_concept_summary_filename, get_summary_filename, get_extractive_summary_filename, get_abstractive_summary_filename
+from data_download_and_stats import first_lines_chapter, process_book, get_complete_summary_filename, get_key_concept_summary_filename, get_summary_filename, get_extractive_summary_filename, get_abstractive_summary_filename, get_abstractive_2_summary_filename
 from extractive_summarizer import find_relevant_quote, create_extractive_summary_book
 from abstractive_summarizer import create_abstractive_summary_book
+from abstractive_2_summarizer import create_abstractive_2_summary_book
 import os
 import sys
 from os import listdir
@@ -81,11 +82,16 @@ def summarize_book(book_id, num_chapters, args):
         chapter_abstractive_summaries = create_abstractive_summary_book(book_id)
     if args.combined:
         create_complete_summary_book(book_id, num_chapters, chapter_abstractive_summaries)
-    if args.entity and args.extractive and args.abstractive and args.combined:
+    if args.abstractive2:
+        create_abstractive_2_summary_book(book_id)
+    #if args.entity and args.extractive and args.abstractive and args.combined:
+    if args.analysis:
         compare_summaries(book_id)
 
 def load_summary(filename):
     nlp = spacy.load('en_core_web_lg')
+    if not os.path.isfile(filename):
+        return '', '', ''
     summary_file = open(filename, 'r')
     summary_text = ' '.join(summary_file)
     summary_doc = nlp(summary_text)
@@ -104,11 +110,19 @@ def compare_summaries(book_id):
     key_concepts_doc, key_concepts_sentences, key_concepts_model = load_summary(get_key_concept_summary_filename(book_id))
     extractive_doc, extractive_sentences, extractive_model = load_summary(get_extractive_summary_filename(book_id))
     abstractive_doc, abstractive_sentences, abstractive_model = load_summary(get_abstractive_summary_filename(book_id))
+    abstractive_2_doc, abstractive_2_sentences, abstractive_2_model = load_summary(get_abstractive_2_summary_filename(book_id))
     complete_doc, complete_sentences, complete_model = load_summary(get_complete_summary_filename(book_id))
-    analysis_data.append(['key concepts', summary_doc.similarity(key_concepts_doc), rouge_n(summary_sentences, key_concepts_sentences), cosine_similarity(summary_model, key_concepts_model)])
-    analysis_data.append(['extractive', summary_doc.similarity(extractive_doc), rouge_n(summary_sentences, extractive_sentences), cosine_similarity(summary_model, extractive_model)])
-    analysis_data.append(['abstractive', summary_doc.similarity(abstractive_doc), rouge_n(summary_sentences, abstractive_sentences), cosine_similarity(summary_model, abstractive_model)])
-    analysis_data.append(['combined', summary_doc.similarity(complete_doc), rouge_n(summary_sentences, complete_sentences), cosine_similarity(summary_model, complete_model)])
+    if summary_doc != '':
+        if key_concepts_doc != '':
+            analysis_data.append(['key concepts', summary_doc.similarity(key_concepts_doc), rouge_n(summary_sentences, key_concepts_sentences), cosine_similarity(summary_model, key_concepts_model)])
+        if extractive_doc != '':
+            analysis_data.append(['extractive', summary_doc.similarity(extractive_doc), rouge_n(summary_sentences, extractive_sentences), cosine_similarity(summary_model, extractive_model)])
+        if abstractive_doc != '':
+            analysis_data.append(['abstractive', summary_doc.similarity(abstractive_doc), rouge_n(summary_sentences, abstractive_sentences), cosine_similarity(summary_model, abstractive_model)])
+        if abstractive_2_doc != '':
+            analysis_data.append(['abstractive 2', summary_doc.similarity(abstractive_2_doc), rouge_n(summary_sentences, abstractive_2_sentences), cosine_similarity(summary_model, abstractive_2_model)])
+        if complete_doc != '':
+            analysis_data.append(['combined', summary_doc.similarity(complete_doc), rouge_n(summary_sentences, complete_sentences), cosine_similarity(summary_model, complete_model)])
     with open('../results/analysis/'+ str(book_id) + '.csv', 'w') as csvFile:
         writer = csv.writer(csvFile)
         writer.writerows(analysis_data)
@@ -122,7 +136,9 @@ def main():
     parser.add_argument("-entity", help="create an entity summary of the book", action="store_true")
     parser.add_argument("-extractive", help="create an extractive summary of the book", action="store_true")
     parser.add_argument("-abstractive", help="create an abstractive summary of the book", action="store_true")
+    parser.add_argument("-abstractive2", help="create an abstractive summary of the book", action="store_true")
     parser.add_argument("-combined", help="create a combined summary of the book", action="store_true")
+    parser.add_argument("-analysis", help="analyze all summaries", action="store_true")
     args = parser.parse_args()
     # if no arguments given, all raw books in raw_books folder will be summarized
     # otherwise argument following book_summarizer.py should be book_id,

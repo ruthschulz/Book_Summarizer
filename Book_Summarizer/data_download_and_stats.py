@@ -41,6 +41,12 @@ def get_abstractive_summary_filename(book_id, chapter_num=-1):
     else:
         return '../results/abstractive_summaries/' + str(book_id) + '-' + str(chapter_num) + '.txt'
 
+def get_abstractive_2_summary_filename(book_id, level=-1):
+    if (level==-1):
+        return '../results/abstractive_2_summaries/' + str(book_id) + '.txt'
+    else:
+        return '../results/abstractive_2_summaries/' + str(book_id) + '-' + str(level) + '.txt'
+
 def get_key_concept_summary_filename(book_id):
     return '../results/key_concept_summaries/' + str(book_id) + '.txt'
 
