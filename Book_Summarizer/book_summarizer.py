@@ -31,8 +31,8 @@ import csv
 
 
 def create_complete_summary_book(book_id, num_chapters, chapter_abstractive_summaries):
-    if not os.path.exists('../data/complete_summaries'):
-        os.makedirs('../data/complete_summaries')
+    if not os.path.exists('../results/complete_summaries'):
+        os.makedirs('../results/complete_summaries')
     summary_filename = get_complete_summary_filename(book_id)
     complete_summary = open(summary_filename, 'w')
     # find characters and key words for book
@@ -91,8 +91,8 @@ def load_summary(filename):
 
 
 def compare_summaries(book_id):
-    if not os.path.exists('../data/analysis'):
-        os.makedirs('../data/analysis')
+    if not os.path.exists('../results/analysis'):
+        os.makedirs('../results/analysis')
     analysis_data = [['summary','spacy similarity','rouge_n','cosine similarity']]
     summary_doc, summary_sentences, summary_model = load_summary(get_summary_filename(book_id))
     key_concepts_doc, key_concepts_sentences, key_concepts_model = load_summary(get_key_concept_summary_filename(book_id))
@@ -114,17 +114,13 @@ def main():
     if len(sys.argv)>1:
         if sys.argv[1][0]!='-':
             book_id = int(sys.argv[1])
-    os.system('cls||clear')
-    print("Book Summarizer:")
-    print("Understanding your books for you")
-    print()
     # if no arguments given, all raw books in raw_books folder will be summarized
     # otherwise argument following book_summarizer.py should be book_id,
     # and book text file named book_id.txt should be found in raw_books folder
+    if not os.path.exists('../results'):
+        os.makedirs('../results')
     if (book_id==-1):
         book_files = [f for f in listdir('../data/raw_books') if isfile(join('../data/raw_books', f))]
-        for f in book_files:
-            print(f.strip('.txt'),end=', ')
         for f in book_files:
             book_id=int(f.strip('.txt'))
             # break down into chapters / segments, then summarize book

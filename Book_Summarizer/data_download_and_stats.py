@@ -27,22 +27,22 @@ def get_summary_filename(book_id):
     return '../data/summaries/' + str(book_id) + '.txt'
 
 def get_complete_summary_filename(book_id):
-    return '../data/complete_summaries/' + str(book_id) + '.txt'
+    return '../results/complete_summaries/' + str(book_id) + '.txt'
 
 def get_extractive_summary_filename(book_id, chapter_num=-1):
     if (chapter_num==-1):
-        return '../data/extractive_summaries/' + str(book_id) + '.txt'
+        return '../results/extractive_summaries/' + str(book_id) + '.txt'
     else:
-        return '../data/extractive_summaries/' + str(book_id) + '-' + str(chapter_num) + '.txt'
+        return '../results/extractive_summaries/' + str(book_id) + '-' + str(chapter_num) + '.txt'
 
 def get_abstractive_summary_filename(book_id, chapter_num=-1):
     if (chapter_num==-1):
-        return '../data/abstractive_summaries/' + str(book_id) + '.txt'
+        return '../results/abstractive_summaries/' + str(book_id) + '.txt'
     else:
-        return '../data/abstractive_summaries/' + str(book_id) + '-' + str(chapter_num) + '.txt'
+        return '../results/abstractive_summaries/' + str(book_id) + '-' + str(chapter_num) + '.txt'
 
 def get_key_concept_summary_filename(book_id):
-    return '../data/key_concept_summaries/' + str(book_id) + '.txt'
+    return '../results/key_concept_summaries/' + str(book_id) + '.txt'
 
 # calculate_data_stats(book_filename,summary_filename)
 #
@@ -256,7 +256,6 @@ def create_book_dataset():
         pg_index = row['id'][2:]
         pg_author = row['author']
         summaries_author = row[3]
-        if ((new_title not in titles) and (calculate_author_match(pg_author, summaries_author) > 40)):
             file_exists = download_from_gutenberg(pg_index)
             if (file_exists):
                 zip_filename = get_zip_filename(pg_index)
@@ -275,7 +274,7 @@ def create_book_dataset():
                 new_stats = [new_title, pg_index, pg_author, summaries_author]
                 new_stats.extend(b_s_stats)
                 stats.append(new_stats)
-    with open('data_stats.csv', 'w') as csvFile:
+    with open('../data/data_stats.csv', 'w') as csvFile:
         writer = csv.writer(csvFile)
         writer.writerows(stats)
     csvFile.close()
@@ -284,7 +283,7 @@ def create_book_dataset():
 # for all books listed in data_stats.csv
 # divide into chapters and save in book_chapters folder
 def test_divide_into_chapters():
-    df = pd.read_csv("data_stats.csv", sep=',', header=None)
+    df = pd.read_csv("../data/data_stats.csv", sep=',', header=None)
     for index, row in df.iterrows():
         pg_index = row[1]
         divide_book_into_chapters(pg_index)

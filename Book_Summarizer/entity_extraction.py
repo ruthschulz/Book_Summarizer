@@ -125,8 +125,8 @@ def create_sentence(entities, about_book=True, about_characters=True, chapter=-1
 
 
 def create_key_concept_summary_book(book_id,num_chapters):
-    if not os.path.exists('../data/key_concept_summaries'):
-        os.makedirs('../data/key_concept_summaries')
+    if not os.path.exists('../results/key_concept_summaries'):
+        os.makedirs('../results/key_concept_summaries')
     summary_filename = get_key_concept_summary_filename(book_id)
     basic_summary = open(summary_filename, 'w')
     # find characters and key words for book
@@ -149,19 +149,3 @@ def create_key_concept_summary_book(book_id,num_chapters):
         if (len(line)>0):
             basic_summary.write(line + '\n')
     basic_summary.close()
-
-
-def test_entity_extraction_sentences():
-    filename = '../data/books/11.txt'
-    chapter_filename = '../data/book_chapters/11-1.txt'
-    book_characters, book_key_entities = find_entities_book(filename)
-    chapter_characters, chapter_key_entities = find_entities_chapter(chapter_filename,
-                                                                     book_characters, book_key_entities)
-
-    print(create_sentence(book_characters, about_book=True, about_characters=True))
-    print(create_sentence(book_key_entities,
-                          about_book=True, about_characters=False))
-    print(create_sentence(chapter_characters,
-                          about_book=False, about_characters=True))
-    print(create_sentence(chapter_key_entities,
-                          about_book=False, about_characters=False))

@@ -75,8 +75,8 @@ def tokenize_file(file_in,file_out):
 
 
 def tokenize_chapter_summaries(book_id):
-    if not os.path.exists('../data/abstractive_summaries'):
-        os.makedirs('../data/abstractive_summaries')
+    if not os.path.exists('../results/abstractive_summaries'):
+        os.makedirs('../results/abstractive_summaries')
     chapter = 0
     extractive_summary_filename = get_extractive_summary_filename(book_id,chapter)
     abstractive_summary_filename = get_abstractive_summary_filename(book_id,chapter)

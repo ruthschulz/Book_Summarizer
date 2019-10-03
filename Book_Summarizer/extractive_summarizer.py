@@ -23,9 +23,9 @@ from data_download_and_stats import get_text_filename, get_chapter_filename, get
 # combines the extractive summaries into a single text file to be analyzed
 def combine_extractive_summaries(book_id):
     chapter = 0
-    chapter_filename = '../data/extractive_summaries/' + \
+    chapter_filename = '../results/extractive_summaries/' + \
         str(book_id) + '-' + str(chapter) + '.txt'
-    combined_filename = '../data/extractive_summaries/' + \
+    combined_filename = '../results/extractive_summaries/' + \
         str(book_id) + '.txt'
     path = pathlib.Path(chapter_filename)
     combined_summary = open(combined_filename, 'w')
@@ -35,7 +35,7 @@ def combine_extractive_summaries(book_id):
             combined_summary.write(s)
         summary.close()
         chapter += 1
-        chapter_filename = '../data/extractive_summaries/' + \
+        chapter_filename = '../results/extractive_summaries/' + \
             str(book_id) + '-' + str(chapter) + '.txt'
         path = pathlib.Path(chapter_filename)
     combined_summary.close()
@@ -49,13 +49,13 @@ def combine_extractive_summaries(book_id):
 # (refers to file break down, may not actually be that chapter in the book)
 # summarizer is the sumy summarizer that will create the summary
 def create_extractive_summary_chapter(book_id, chapter, summarizer, size):
-    if not os.path.exists('../data/extractive_summaries'):
-        os.makedirs('../data/extractive_summaries')
+    if not os.path.exists('../results/extractive_summaries'):
+        os.makedirs('../results/extractive_summaries')
     chapter_filename = '../data/book_chapters/' + \
         str(book_id) + '-' + str(chapter) + '.txt'
     parser = PlaintextParser.from_file(chapter_filename, Tokenizer("english"))
     summary = summarizer(parser.document, size)
-    file = '../data/extractive_summaries/' + \
+    file = '../results/extractive_summaries/' + \
         str(book_id) + '-' + str(chapter) + '.txt'
     with open(file, 'w') as f:
         for sentence in summary:
@@ -95,81 +95,3 @@ def create_extractive_summary_book(book_id, size, summarizer=LuhnSummarizer()):
             str(book_id) + '-' + str(chapter) + '.txt'
         path = pathlib.Path(chapter_filename)
     combine_extractive_summaries(book_id)
-
-# for all books listed in data_stats.csv
-# create extractive summary using sumy standard summarizer Luhn
-def test_create_luhn_extractive_summaries():
-    df = pd.read_csv("data_stats.csv", sep=',', header=None)
-    summarizer = LuhnSummarizer()
-    for index, row in df.iterrows():
-        pg_index = row[1]
-        print(pg_index)
-        create_extractive_summary_book(pg_index, 3, summarizer)
-
-
-# for all books listed in data_stats.csv
-# create extractive summary using sumy standard summarizer LSA
-def test_create_lsa_extractive_summaries():
-    df = pd.read_csv("data_stats.csv", sep=',', header=None)
-    summarizer = LsaSummarizer()
-    for index, row in df.iterrows():
-        pg_index = row[1]
-        print(pg_index)
-        create_extractive_summary_book(pg_index, 3, summarizer)
-
-
-# for all books listed in data_stats.csv
-# create extractive summary using sumy standard summarizer TextRank
-def test_create_tr_extractive_summaries():
-    df = pd.read_csv("data_stats.csv", sep=',', header=None)
-    summarizer = TextRankSummarizer()
-    for index, row in df.iterrows():
-        pg_index = row[1]
-        print(pg_index)
-        create_extractive_summary_book(pg_index, 3, summarizer)
-
-
-# for all books listed in data_stats.csv
-# create extractive summary using sumy standard summarizer LexRank
-def test_create_lr_extractive_summaries():
-    df = pd.read_csv("data_stats.csv", sep=',', header=None)
-    summarizer = LexRankSummarizer()
-    for index, row in df.iterrows():
-        pg_index = row[1]
-        print(pg_index)
-        create_extractive_summary_book(pg_index, 3, summarizer)
-
-
-# for all books listed in data_stats.csv
-# combine extractive summaries into one text file
-def test_combine_extractive_summaries():
-    df = pd.read_csv("data_stats.csv", sep=',', header=None)
-    for index, row in df.iterrows():
-        pg_index = row[1]
-        print(pg_index)
-        combine_extractive_summaries(pg_index)
-
-
-# for all combined summaries
-# print analysis of the summary compared to the supplied summary
-def test_analyze_summary():
-    df = pd.read_csv("data_stats.csv", sep=',', header=None)
-    scores = []
-    for index, row in df.iterrows():
-        pg_index = row[1]
-        print(pg_index)
-        combined_filename = '../data/combined_summaries/' + \
-            str(pg_index) + '.txt'
-        path = pathlib.Path(combined_filename)
-        if path.exists():
-            scores.append(analyze_summary(pg_index))
-            print(scores[-1])
-    with open('combined_summary_scores.csv', 'w') as csvFile:
-        writer = csv.writer(csvFile)
-        writer.writerows(scores)
-    csvFile.close()
-
-
-# for one book, print analysis of the summary compared to the supplied summary
-def test_analyze_summary1(book_id):
-    print(analyze_summary(book_id))
