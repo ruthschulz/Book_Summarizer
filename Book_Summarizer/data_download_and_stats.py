@@ -255,6 +255,7 @@ def create_book_dataset():
         pg_index = row['id'][2:]
         pg_author = row['author']
         summaries_author = row[3]
+        if ((new_title not in titles) and (calculate_author_match(pg_author, summaries_author) > 40)):
             file_exists = download_from_gutenberg(pg_index)
             if (file_exists):
                 zip_filename = get_zip_filename(pg_index)

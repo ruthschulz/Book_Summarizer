@@ -21,7 +21,7 @@ def consolidate_list(long_list):
         if len(match_found) > 0:
             matched_list[match_found] = matched_list[match_found] + new_item[1]
         else:
-            matched_list[new_item[0].replace('\n', '')] = new_item[1]
+            matched_list[new_item[0]] = new_item[1]
     return matched_list
 
 
@@ -44,7 +44,7 @@ def remove_characters_from_entities(characters, entities):
 
 def find_entities_book(book_id):
     filename = get_clean_book_filename(book_id)
-    nlp = spacy.load('en_core_web_sm')
+    nlp = spacy.load('en_core_web_lg')
     book = open(filename, 'r')
     book_text = ' '.join(book)
     if len(book_text) > 1000000:
@@ -54,16 +54,19 @@ def find_entities_book(book_id):
     characters = dict()
     key_entities = dict()
     for ent in doc.ents:
-        if (ent.label_ in entity_types):
-            if (ent.text in key_entities):
-                key_entities[ent.text] = key_entities[ent.text] + 1
-            else:
-                key_entities[ent.text] = 1
-        if (ent.label_ == "PERSON"):
-            if ent.text in characters:
-                characters[ent.text] = characters[ent.text] + 1
-            else:
-                characters[ent.text] = 1
+        new_entity = ent.text.replace('\n','')
+        new_entity.strip()
+        if len(new_entity)>0:
+            if (ent.label_ in entity_types):
+                if (new_entity in key_entities):
+                    key_entities[new_entity] = key_entities[new_entity] + 1
+                else:
+                    key_entities[new_entity] = 1
+            if (ent.label_ == "PERSON"):
+                if new_entity in characters:
+                    characters[new_entity] = characters[new_entity] + 1
+                else:
+                    characters[new_entity] = 1
     matched_entities = consolidate_list(key_entities)
     matched_characters = dict()
     for character in characters.keys():
