@@ -4,6 +4,7 @@ import spacy
 from fuzzywuzzy import fuzz
 import operator
 import os
+import csv
 
 from data_download_and_stats import get_text_filename, get_chapter_filename, get_clean_book_filename, get_key_concept_summary_filename
 
@@ -113,18 +114,38 @@ def create_sentence(entities, about_book=True, about_characters=True, chapter=-1
     if (len(entities)>0):
         sentence = ("Book " if about_book else "Chapter " + str(chapter) + " ") + \
             ("characters: " if about_characters else "key terms: ")
-        #sentence = "The " + ("characters" if about_characters else "key terms") + " in this " + \
-        #    ("book" if about_book else "chapter") + " are "
         sorted_entities = sorted(
             entities.items(), key=operator.itemgetter(1), reverse=True)
         num_to_print = (min(10, len(sorted_entities)-1)
                     if about_book else min(5, len(sorted_entities)-1))
         for entity in sorted_entities[:num_to_print-1]:
             sentence = sentence + entity[0] + ', '
-        #if (len(sorted_entities) > 1):
-        #    sentence = sentence + "and "
         sentence = sentence + sorted_entities[num_to_print-1][0] + '.'
     return sentence
+
+def save_sorted_entities_book(characters, entities, book_id):
+    sorted_characters = sorted(
+        characters.items(), key=operator.itemgetter(1), reverse=True)
+    sorted_entities = sorted(
+        entities.items(), key=operator.itemgetter(1), reverse=True)
+    with open('../results/key_concept_summaries/'+ str(book_id) + '.csv', 'w') as csvFile:
+        writer = csv.writer(csvFile)
+        writer.writerows(sorted_characters)
+        writer.writerows(sorted_entities)
+    csvFile.close()
+
+    
+def save_sorted_entities_chapter(characters, entities, book_id, chapter):
+    sorted_characters = sorted(
+        characters.items(), key=operator.itemgetter(1), reverse=True)
+    sorted_entities = sorted(
+        entities.items(), key=operator.itemgetter(1), reverse=True)
+    with open('../results/key_concept_summaries/'+ str(book_id) + '.csv', 'a') as csvFile:
+        writer = csv.writer(csvFile)
+        writer.writerows([['Chapter ' + str(chapter)]])
+        writer.writerows(sorted_characters)
+        writer.writerows(sorted_entities)
+    csvFile.close()
 
 
 def create_key_concept_summary_book(book_id,num_chapters):
@@ -139,6 +160,7 @@ def create_key_concept_summary_book(book_id,num_chapters):
     basic_summary.write(line + '\n')
     line = create_sentence(book_entities, about_book=True, about_characters=False) 
     basic_summary.write(line + '\n')
+    save_sorted_entities_book(book_characters, book_entities, book_id)
     # for each chapter
     for chapter in range(num_chapters):
         # find characters and key words
@@ -151,4 +173,5 @@ def create_key_concept_summary_book(book_id,num_chapters):
         line = create_sentence(chapter_entities, about_book=False, about_characters=False, chapter=chapter)
         if (len(line)>0):
             basic_summary.write(line + '\n')
+        save_sorted_entities_chapter(chapter_characters, chapter_entities, book_id, chapter)
     basic_summary.close()
