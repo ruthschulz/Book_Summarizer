@@ -30,7 +30,6 @@ def tokenize_book(input_data):
     sen_arr = []
     for sen in article.sents:
         sen = [k.text for k in sen if '\n' not in k.text]
-        #sen = ['<s>']+sen+['</s>']
         sen = ' '.join(sen)
         sen_arr.append(sen)
     article = ' '.join(sen_arr)
@@ -49,8 +48,6 @@ def tokenize_book(input_data):
         sen_arr.append(sen)
     title = ' '.join(sen_arr)
     sen_arr = [title, summary, article]
-    
-    #return '<sec>'.join(sen_arr)
     return title + summary + '<sec>' + article
 
 
@@ -58,16 +55,14 @@ def tokenize_file(file_in,file_out):
     # book may also be extractive summary
     book = open(file_in, 'rb')
     book_text = ''
-    # remove special characters
-    # make lower case
+    # remove special characters and make lower case
     for line in book:
         line = line.decode('utf-8').encode('ascii', 'ignore').decode('ascii')
         book_text = book_text + ' ' + line.lower()
     book.close()
     if len(book_text) > 1000000:
         book_text = book_text[:1000000]
-    # tokenize using spacy
-    # add <s>, </s>, and <sec> tags
+    # tokenize using spacy and add <s>, </s>, and <sec> tags
     tokenized_book = tokenize_book(book_text)
     processed_book = open(file_out,'w')
     processed_book.write(tokenized_book)
@@ -117,7 +112,6 @@ def detokenize_summary(filename_in,filename_out):
         lines.append(line)
     file_in.close()
     file_out.close()
-    print(len(lines))
     return lines
 
 # adapted from:
@@ -214,4 +208,3 @@ def create_abstractive_summary_book(book_id):
     # process abstractive summary summaries.txt into abstractive summary
     # (detokenize)
     return(detokenize_summary('../../nats_results/summaries.txt',get_abstractive_summary_filename(book_id)))
-
