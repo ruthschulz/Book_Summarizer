@@ -15,13 +15,19 @@
 # -g for generated sentence
 
 from entity_extraction import find_entities_book, find_entities_chapter, create_sentence, create_key_concept_summary_book
-from data_download_and_stats import find_book, first_lines_chapter, process_book, get_complete_summary_filename
+from data_download_and_stats import find_book, first_lines_chapter, process_book, get_complete_summary_filename, get_key_concept_summary_filename, get_summary_filename, get_extractive_summary_filename, get_abstractive_summary_filename
 from extractive_summarizer import find_relevant_quote, create_extractive_summary_book
 from abstractive_summarizer import create_abstractive_summary_book
 import os
 import sys
 from os import listdir
 from os.path import isfile, join
+import spacy
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.models import TfDocumentModel
+from sumy.evaluation import cosine_similarity, rouge_n
+import csv
 
 
 def create_complete_summary_book(book_id, num_chapters, chapter_abstractive_summaries):
@@ -70,6 +76,37 @@ def summarize_book(book_id, num_chapters):
     create_extractive_summary_book(book_id,3)
     chapter_abstractive_summaries = create_abstractive_summary_book(book_id)
     create_complete_summary_book(book_id, num_chapters, chapter_abstractive_summaries)
+    compare_summaries(book_id)
+
+def load_summary(filename):
+    nlp = spacy.load('en_core_web_lg')
+    summary_file = open(filename, 'r')
+    summary_text = ' '.join(summary_file)
+    summary_doc = nlp(summary_text)
+    summary_parser = PlaintextParser.from_file(
+        filename, Tokenizer("english"))
+    summary_sentences = summary_parser.document.sentences
+    summary_model = TfDocumentModel(str(summary_sentences), Tokenizer("en"))
+    return summary_doc, summary_sentences, summary_model
+
+
+def compare_summaries(book_id):
+    if not os.path.exists('../data/analysis'):
+        os.makedirs('../data/analysis')
+    analysis_data = [['summary','spacy similarity','rouge_n','cosine similarity']]
+    summary_doc, summary_sentences, summary_model = load_summary(get_summary_filename(book_id))
+    key_concepts_doc, key_concepts_sentences, key_concepts_model = load_summary(get_key_concept_summary_filename(book_id))
+    extractive_doc, extractive_sentences, extractive_model = load_summary(get_extractive_summary_filename(book_id))
+    abstractive_doc, abstractive_sentences, abstractive_model = load_summary(get_abstractive_summary_filename(book_id))
+    complete_doc, complete_sentences, complete_model = load_summary(get_complete_summary_filename(book_id))
+    analysis_data.append(['key concepts', summary_doc.similarity(key_concepts_doc), rouge_n(summary_sentences, key_concepts_sentences), cosine_similarity(summary_model, key_concepts_model)])
+    analysis_data.append(['extractive', summary_doc.similarity(extractive_doc), rouge_n(summary_sentences, extractive_sentences), cosine_similarity(summary_model, extractive_model)])
+    analysis_data.append(['abstractive', summary_doc.similarity(abstractive_doc), rouge_n(summary_sentences, abstractive_sentences), cosine_similarity(summary_model, abstractive_model)])
+    analysis_data.append(['complete', summary_doc.similarity(complete_doc), rouge_n(summary_sentences, complete_sentences), cosine_similarity(summary_model, complete_model)])
+    with open('../data/analysis/'+ str(book_id) + '.csv', 'w') as csvFile:
+        writer = csv.writer(csvFile)
+        writer.writerows(analysis_data)
+    csvFile.close()
 
 
 def main():

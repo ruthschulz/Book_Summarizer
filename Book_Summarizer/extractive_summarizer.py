@@ -18,27 +18,6 @@ import csv
 
 from data_download_and_stats import get_text_filename, get_chapter_filename, get_clean_book_filename
 
-# analyze_summary(book_id)
-#
-# analyze the summary using ROUGE n score and cosine similarity
-def analyze_summary(book_id):
-    combined_filename = '../data/combined_summaries/' + \
-        str(book_id) + '.txt'
-    summary_filename = '../data/summaries/' + \
-        str(book_id) + '.txt'
-    parser_s = PlaintextParser.from_file(
-        summary_filename, Tokenizer("english"))
-    parser_e = PlaintextParser.from_file(
-        combined_filename, Tokenizer("english"))
-    summary_s = parser_s.document.sentences
-    summary_e = parser_e.document.sentences
-    rouge_n_score = rouge_n(summary_s, summary_e)
-    model1 = TfDocumentModel(str(summary_s), Tokenizer("en"))
-    model2 = TfDocumentModel(str(summary_e), Tokenizer("en"))
-    cosine_sim_score = cosine_similarity(model1, model2)
-    return [rouge_n_score, cosine_sim_score]
-
-
 # combine_extractive_summaries(book_id)
 #
 # combines the extractive summaries into a single text file to be analyzed

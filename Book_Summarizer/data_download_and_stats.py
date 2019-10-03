@@ -29,8 +29,11 @@ def get_summary_filename(book_id):
 def get_complete_summary_filename(book_id):
     return '../data/complete_summaries/' + str(book_id) + '.txt'
 
-def get_extractive_summary_filename(book_id, chapter_num):
-    return '../data/extractive_summaries/' + str(book_id) + '-' + str(chapter_num) + '.txt'
+def get_extractive_summary_filename(book_id, chapter_num=-1):
+    if (chapter_num==-1):
+        return '../data/extractive_summaries/' + str(book_id) + '.txt'
+    else:
+        return '../data/extractive_summaries/' + str(book_id) + '-' + str(chapter_num) + '.txt'
 
 def get_abstractive_summary_filename(book_id, chapter_num=-1):
     if (chapter_num==-1):
