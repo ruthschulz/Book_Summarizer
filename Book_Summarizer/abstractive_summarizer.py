@@ -10,7 +10,7 @@ import pathlib
 from regex import Regex, UNICODE, IGNORECASE
 from extractive_summarizer import create_extractive_summary_book
 from data_download_and_stats import get_chapter_filename, get_extractive_summary_filename, get_abstractive_summary_filename
-#from nats.pointer_generator_network.model import *
+from nats.pointer_generator_network.model import *
 import argparse
 
 CONTRACTIONS = (r'^\p{Alpha}+(\'(ll|ve|re|[dsm])|n\'t)$')
@@ -53,7 +53,7 @@ def tokenize_book(input_data):
     return title + summary + '<sec>' + article
 
 
-def tokenize_file(file_in,file_out):
+def tokenize_file(file_in, file_out):
     # book may also be extractive summary
     book = open(file_in, 'rb')
     book_text = ''
@@ -66,7 +66,7 @@ def tokenize_file(file_in,file_out):
         book_text = book_text[:1000000]
     # tokenize using spacy and add <s>, </s>, and <sec> tags
     tokenized_book = tokenize_book(book_text)
-    processed_book = open(file_out,'w')
+    processed_book = open(file_out, 'w')
     processed_book.write(tokenized_book)
     processed_book.close()
 
@@ -75,46 +75,53 @@ def tokenize_chapter_summaries(book_id):
     if not os.path.exists('../results/abstractive_summaries'):
         os.makedirs('../results/abstractive_summaries')
     chapter = 0
-    extractive_summary_filename = get_extractive_summary_filename(book_id,chapter)
-    abstractive_summary_filename = get_abstractive_summary_filename(book_id,chapter)
-    book_abstractive_summary_filename = get_abstractive_summary_filename(book_id)
+    extractive_summary_filename = get_extractive_summary_filename(
+        book_id, chapter)
+    abstractive_summary_filename = get_abstractive_summary_filename(
+        book_id, chapter)
+    book_abstractive_summary_filename = get_abstractive_summary_filename(
+        book_id)
     path = pathlib.Path(extractive_summary_filename)
     book_summary = open(book_abstractive_summary_filename, 'w')
     while path.exists():
-        tokenize_file(extractive_summary_filename, abstractive_summary_filename)
-        chapter_summary = open(abstractive_summary_filename,'r')
+        tokenize_file(extractive_summary_filename,
+                      abstractive_summary_filename)
+        chapter_summary = open(abstractive_summary_filename, 'r')
         for l in chapter_summary:
             book_summary.write(l)
         book_summary.write('\n')
         chapter_summary.close()
         chapter += 1
-        extractive_summary_filename = get_extractive_summary_filename(book_id,chapter)
-        abstractive_summary_filename = get_abstractive_summary_filename(book_id,chapter)
+        extractive_summary_filename = get_extractive_summary_filename(
+            book_id, chapter)
+        abstractive_summary_filename = get_abstractive_summary_filename(
+            book_id, chapter)
         path = pathlib.Path(extractive_summary_filename)
     book_summary.close()
 
 
 # adapted from:
 # https://github.com/ufal/mtmonkey/blob/master/worker/src/util/fileprocess.py
-def detokenize_summary(filename_in,filename_out):
+def detokenize_summary(filename_in, filename_out):
     file_in = open(filename_in, 'r')
     file_out = open(filename_out, 'w')
     lines = []
     for line in file_in:
         line = line.rstrip('\r\n')
-        line = line.replace('<s> summary </s>','')
-        line = line.replace('<s> title </s>','')
-        line = line.replace('<s>','')
-        line = line.replace('</s>','')
-        line = line.replace('<sec>','\n')
-        line = line.replace('<stop>','')
-        line = line.replace('<pad>','')
+        line = line.replace('<s> summary </s>', '')
+        line = line.replace('<s> title </s>', '')
+        line = line.replace('<s>', '')
+        line = line.replace('</s>', '')
+        line = line.replace('<sec>', '\n')
+        line = line.replace('<stop>', '')
+        line = line.replace('<pad>', '')
         line = detokenize_line(line)
         file_out.write(line)
         lines.append(line)
     file_in.close()
     file_out.close()
     return lines
+
 
 # adapted from:
 # https://github.com/ufal/mtmonkey/blob/master/worker/src/util/detokenize.py
@@ -124,7 +131,7 @@ def detokenize_line(line):
     """
     # split text
     words = line.split(' ')
-    # paste text back, omitting spaces where needed 
+    # paste text back, omitting spaces where needed
     text = ''
     pre_spc = ' '
     quote_count = {'\'': 0, '"': 0, '`': 0}
@@ -139,21 +146,21 @@ def detokenize_line(line):
         elif Regex(NOPRESPACE_PUNCT).match(word):
             text += word
             pre_spc = ' '
-        # contractions with comma or hyphen 
+        # contractions with comma or hyphen
         elif word in "'-–" and pos > 0 and pos < len(words) - 1 \
                 and Regex(CONTRACTIONS).match(''.join(words[pos - 1:pos + 2])):
             text += word
             pre_spc = ''
         # handle quoting
         elif word in '\'"„“”‚‘’`':
-            # detect opening and closing quotes by counting 
+            # detect opening and closing quotes by counting
             # the appropriate quote types
             quote_type = word
             if quote_type in '„“”':
                 quote_type = '"'
             elif quote_type in '‚‘’':
                 quote_type = '\''
-            # special case: possessives in English ("Jones'" etc.)                    
+            # special case: possessives in English ("Jones'" etc.)
             if text.endswith('s'):
                 text += word
                 pre_spc = ' '
@@ -177,7 +184,7 @@ def detokenize_line(line):
         else:
             if capitalize_next:
                 capitalize_next = False
-                if len(word)==1:
+                if len(word) == 1:
                     word = word.upper()
                 else:
                     word = word[0].upper() + word[1:]
@@ -203,99 +210,103 @@ def create_abstractive_summary_book(book_id):
     # run abstractive summarizer
     if not os.path.exists('../sum_data'):
         os.makedirs('../sum_data')
-    shutil.copyfile(get_abstractive_summary_filename(book_id), '../sum_data/test.txt')
+    shutil.copyfile(get_abstractive_summary_filename(
+        book_id), '../sum_data/test.txt')
     parser = argparse.ArgumentParser()
     '''
     Use in the framework and cannot remove.
     '''
     parser.add_argument('--task', default='train',
-                    help='train | validate | rouge | beam')
+                        help='train | validate | rouge | beam')
 
     parser.add_argument('--data_dir', default='../sum_data/',
-                    help='directory that store the data.')
+                        help='directory that store the data.')
     parser.add_argument('--file_corpus', default='train.txt',
-                    help='file store training documents.')
+                        help='file store training documents.')
     parser.add_argument('--file_val', default='val.txt', help='val data')
 
     parser.add_argument('--n_epoch', type=int, default=35,
-                    help='number of epochs.')
-    parser.add_argument('--batch_size', type=int, default=16, help='batch size.')
+                        help='number of epochs.')
+    parser.add_argument('--batch_size', type=int,
+                        default=16, help='batch size.')
     parser.add_argument('--checkpoint', type=int, default=100,
-                    help='How often you want to save model?')
+                        help='How often you want to save model?')
     parser.add_argument('--val_num_batch', type=int,
-                    default=30, help='how many batches')
+                        default=30, help='how many batches')
     parser.add_argument('--nbestmodel', type=int, default=10,
-                    help='How many models you want to keep?')
+                        help='How many models you want to keep?')
 
     parser.add_argument('--continue_training', type=str2bool,
-                    default=True, help='Do you want to continue?')
+                        default=True, help='Do you want to continue?')
     parser.add_argument('--train_base_model', type=str2bool, default=False,
-                    help='True: Use Pretrained Param | False: Transfer Learning')
+                        help='True: Use Pretrained Param | False: Transfer Learning')
     parser.add_argument('--use_move_avg', type=str2bool,
-                    default=False, help='move average')
+                        default=False, help='move average')
     parser.add_argument('--use_optimal_model', type=str2bool,
-                    default=True, help='Do you want to use the best model?')
-    parser.add_argument('--model_optimal_key', default='0,0', help='epoch,batch')
+                        default=True, help='Do you want to use the best model?')
+    parser.add_argument('--model_optimal_key',
+                        default='0,0', help='epoch,batch')
     parser.add_argument('--is_lower', type=str2bool, default=True,
-                    help='convert all tokens to lower case?')
+                        help='convert all tokens to lower case?')
     '''
     User specified parameters.
     '''
-    parser.add_argument('--device', default=torch.device("cuda:0"), help='device')
+    parser.add_argument(
+        '--device', default=torch.device("cuda:0"), help='device')
     parser.add_argument('--file_vocab', default='vocab',
-                    help='file store training vocabulary.')
+                        help='file store training vocabulary.')
 
     parser.add_argument('--max_vocab_size', type=int, default=50000,
-                    help='max number of words in the vocabulary.')
+                        help='max number of words in the vocabulary.')
     parser.add_argument('--word_minfreq', type=int,
-                    default=5, help='min word frequency')
+                        default=5, help='min word frequency')
 
     parser.add_argument('--emb_dim', type=int, default=128,
-                    help='source embedding dimension')
+                        help='source embedding dimension')
     parser.add_argument('--src_hidden_dim', type=int,
-                    default=256, help='encoder hidden dimension')
+                        default=256, help='encoder hidden dimension')
     parser.add_argument('--trg_hidden_dim', type=int,
-                    default=256, help='decoder hidden dimension')
+                        default=256, help='decoder hidden dimension')
     parser.add_argument('--src_seq_lens', type=int, default=400,
-                    help='length of source documents.')
+                        help='length of source documents.')
     parser.add_argument('--trg_seq_lens', type=int, default=100,
-                    help='length of target documents.')
+                        help='length of target documents.')
 
     parser.add_argument('--rnn_network', default='lstm', help='gru | lstm')
     parser.add_argument('--attn_method', default='luong_concat',
-                    help='luong_dot | luong_concat | luong_general')
+                        help='luong_dot | luong_concat | luong_general')
     parser.add_argument('--repetition', default='vanilla',
-                    help='vanilla | temporal | asee (coverage). Repetition Handling')
+                        help='vanilla | temporal | asee (coverage). Repetition Handling')
     parser.add_argument('--pointer_net', type=str2bool,
-                    default=True, help='Use pointer network?')
+                        default=True, help='Use pointer network?')
     parser.add_argument('--oov_explicit', type=str2bool,
-                    default=True, help='explicit OOV?')
+                        default=True, help='explicit OOV?')
     parser.add_argument('--attn_decoder', type=str2bool,
-                    default=True, help='attention decoder?')
+                        default=True, help='attention decoder?')
     parser.add_argument('--share_emb_weight', type=str2bool,
-                    default=True, help='share_emb_weight')
+                        default=True, help='share_emb_weight')
 
     parser.add_argument('--learning_rate', type=float,
-                    default=0.0001, help='learning rate.')
+                        default=0.0001, help='learning rate.')
     parser.add_argument('--grad_clip', type=float, default=2.0,
-                    help='clip the gradient norm.')
+                        help='clip the gradient norm.')
 
     parser.add_argument('--file_test', default='test.txt', help='test data')
     parser.add_argument('--file_output', default='summaries.txt',
-                    help='test output file')
+                        help='test output file')
     parser.add_argument('--beam_size', type=int, default=5, help='beam size.')
     parser.add_argument('--test_batch_size', type=int, default=1,
-                    help='batch size for beam search.')
+                        help='batch size for beam search.')
     parser.add_argument('--copy_words', type=str2bool,
-                    default=True, help='Do you want to copy words?')
+                        default=True, help='Do you want to copy words?')
     # for app
     parser.add_argument('--app_model_dir', default='../../pg_model/',
-                    help='directory that stores models.')
+                        help='directory that stores models.')
     parser.add_argument('--app_data_dir', default='../../',
-                    help='directory that stores data.')
+                        help='directory that stores data.')
     args = parser.parse_args([])
     model = modelPointerGenerator(args)
     model.test()
     # process abstractive summary summaries.txt into abstractive summary
     # (detokenize)
-    return(detokenize_summary('../nats_results/summaries.txt',get_abstractive_summary_filename(book_id)))
+    return(detokenize_summary('../nats_results/summaries.txt', get_abstractive_summary_filename(book_id)))
