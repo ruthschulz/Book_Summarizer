@@ -1,8 +1,6 @@
 # To install these Python dependencies, please type:
 # pip install -r requirements.txt
 
-# streamlit
-
 wget
 sumy
 fuzzywuzzy
@@ -10,6 +8,6 @@ pandas
 shutil
 os
 zipfile
-
-# python -c "import nltk; nltk.download('punkt')"
-
+spacy
+pyrouge
+python-Levenshtein
