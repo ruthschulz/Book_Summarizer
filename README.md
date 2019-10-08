@@ -1,91 +1,85 @@
 # Book Summarizer
 
-Create an abstractive summary of books
+## Summarizing very long text for you
 
-Project as part of Insight AI
+Book Summarizer is a natural language summarization tool that takes in the plain text of a very long document and outputs a variety of summaries using NLP tools and a neural text summarizer.
+
+The project was a consulting project completed as part of the Insight AI program in Silicon Valley.
+Tolstoy.ai provided the inspiration and NLP advice.
+
+[Here](http://bit.ly/BookSummarizerSlides) are the slides for the Book Summarizer project.
 
 ## Project contents:
 - **Book_Summarizer** : All source code
-- **tests** : Source code for testing
-- **configs** : Files for modification of all preset variables
 - **data** : Sample data 
+- **results** : Sample results 
+- **configs** : Files for modification of all preset variables
 
-## Setup
-Clone repository and update python path
+## Setup Environment
+
+The following setup instructions are for you to clone the repo to run locally.
+
+Clone repository
 ```
-repo_name=Book_Summarizer # URL of your new repository
-username=ruthschulz # Username for your personal github account
-git clone https://github.com/$username/$repo_name
-cd $repo_name
-echo "export $repo_name=${PWD}" >> ~/.bash_profile
-echo "export PYTHONPATH=$repo_name/src:${PYTHONPATH}" >> ~/.bash_profile
-source ~/.bash_profile
-```
-
-## Requisites
-
-- All packages and software needed to build the environment
-
-#### Installation
-To install the packages above, please run:
-```shell
-pip install -r requirements
+git clone https://github.com/ruthschulz/Book_Summarizer
+cd Book_Summarizer
 ```
 
-## Run
+Additional nltk dependencies
+```bash
+python -c "import nltk; nltk.download('punkt')"
+
+```
+
+Additional spaCy dependencies
+```bash
+python -m spacy download en_vectors_web_lg
+
+```
+
+If you are not able to download the large spaCy model, it is possible to use the small model, but the entity summary will not perform as well and the word embedding analysis will not be available:
+```bash
+python -m spacy download en_vectors_web_sm
+
+```
+
+This project uses another repository for the abstractive summarizer module.
+The abstractive summarizer module is a forked version of the [LeafNATS](https://github.com/ruthschulz/LeafNATS) repository.
+Run these to copy the required folders of the LeafNATS repository into the appropriate place in the Book Summarizer repository.
+```
+git clone https://github.com/ruthschulz/LeafNATS
+mv LeafNATS/* Book_Summarizer
+```
+
+
+
+## Run Book Summarizer
+
+Place the text file of the book that you wish to summarize in the data/raw_books folder.
+
 
 ```
 cd Book_Summarizer
-python book_summarizer.py
+python book_summarizer.py -technique
 ```
 
-The program will then ask you to enter the title of the book to summarize, choose from a list which book from Project Gutenberg to download, then print a summary of the book to the terminal.
-
-## Test
-- Include instructions for how to run all tests after the software is installed
+Technique can be one of the following:
 ```
-# Example
-
-# Step 1
-# Step 2
+python book_summarizer.py -entity
+python book_summarizer.py -extractive
+python book_summarizer.py -abstractive
+python book_summarizer.py -abstractive2
+python book_summarizer.py -combined
 ```
 
-## Run Inference
-- Include instructions on how to run inference
-- i.e. image classification on a single image for a CNN deep learning project
-```
-# Example
 
-# Step 1
-# Step 2
+
+
+It is also possible to analyze the summaries, comparing them to an existing summary in the data/summaries folder:
+```
+python book_summarizer.py -analysis
 ```
 
-## Build Model
-- Include instructions of how to build the model
-- This can be done either locally or on the cloud
-```
-# Example
+The program will then save a summary of the book in the appropriate results folder.
 
-# Step 1
-# Step 2
-```
 
-## Serve Model
-- Include instructions of how to set up a REST or RPC endpoint
-- This is for running remote inference via a custom model
-```
-# Example
-
-# Step 1
-# Step 2
-```
-
-## Analysis
-- Include some form of EDA (exploratory data analysis)
-- And/or include benchmarking of the model and results
-```
-# Example
-
-# Step 1
-# Step 2
-```
