@@ -8,47 +8,38 @@ import csv
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 
-def get_text_filename(book_id):
-    return str(book_id) + ".txt"
+def get_text_filename(book_id,chapter_num=-1):
+    if chapter_num!=-1:
+        filename = str(book_id) + '-' + str(chapter_num) + '.txt'
+    else:
+        filename = str(book_id) + ".txt"
+    return filename
 
 def get_zip_filename(book_id):
     return str(book_id) + ".zip"
 
-def get_raw_book_filename(book_id):
-    return '../data/raw_books/' + get_text_filename(book_id)
+def get_data_filename(book_id, foldername, chapter_num=-1):
+    return '../data/' + foldername + '/' + get_text_filename(book_id,chapter_num)
 
-def get_clean_book_filename(book_id):
-    return '../data/books/' + get_text_filename(book_id)
-
-def get_chapter_filename(book_id, chapter_num):
-    return '../data/book_chapters/' + str(book_id) + '-' + str(chapter_num) + '.txt'
-
-def get_summary_filename(book_id):
-    return '../data/summaries/' + str(book_id) + '.txt'
-
-def get_complete_summary_filename(book_id):
-    return '../results/complete_summaries/' + str(book_id) + '.txt'
-
-def get_extractive_summary_filename(book_id, chapter_num=-1):
-    if (chapter_num==-1):
-        return '../results/extractive_summaries/' + str(book_id) + '.txt'
+def get_summary_extension(args):
+    ext = ''
+    if args.fl and args.en and args.ex and args.ae and args.aa:
+        ext = '-all'
     else:
-        return '../results/extractive_summaries/' + str(book_id) + '-' + str(chapter_num) + '.txt'
+        if args.fl:
+            ext = ext + '-fl'
+        if args.en:
+            ext = ext + '-en'
+        if args.ex:
+            ext = ext + '-ex'
+        if args.ae:
+            ext = ext + '-ae'
+        if args.aa:
+            ext = ext + '-aa'
+    return ext
 
-def get_abstractive_summary_filename(book_id, chapter_num=-1):
-    if (chapter_num==-1):
-        return '../results/abstractive_summaries/' + str(book_id) + '.txt'
-    else:
-        return '../results/abstractive_summaries/' + str(book_id) + '-' + str(chapter_num) + '.txt'
-
-def get_abstractive_2_summary_filename(book_id, level=-1):
-    if (level==-1):
-        return '../results/abstractive_2_summaries/' + str(book_id) + '.txt'
-    else:
-        return '../results/abstractive_2_summaries/' + str(book_id) + '-' + str(level) + '.txt'
-
-def get_key_concept_summary_filename(book_id):
-    return '../results/key_concept_summaries/' + str(book_id) + '.txt'
+def get_results_filename(book_id, args):
+    return '../results/summaries/' + str(book_id) + get_summary_extension(args) + '.txt'
 
 # calculate_data_stats(book_filename,summary_filename)
 #
@@ -136,13 +127,10 @@ def extract_book(pg_index, zip_filename='', text_filename='', book_filename=''):
         os.makedirs('../data/raw_books')
     if len(zip_filename)==0:
         zip_filename = get_zip_filename(pg_index)
-        #zip_filename = str(pg_index) + ".zip"
     if len(text_filename)==0:
         text_filename = get_text_filename(pg_index)
-        #text_filename = str(pg_index) + ".txt"
     if len(book_filename)==0:
-        book_filename = get_raw_book_filename(pg_index)
-        #book_filename = '../data/raw_books/' + text_filename
+        book_filename = get_data_filename(pg_index,'raw_books')
     with ZipFile(zip_filename, 'r') as zipObj:
         zipObj.extractall()
     if os.path.exists(text_filename):
@@ -173,8 +161,8 @@ def save_clean_book(pg_index):
     if not os.path.exists('../data/books'):
         os.makedirs('../data/books')
     text_filename = get_text_filename(pg_index)
-    book_filename = get_raw_book_filename(pg_index)
-    clean_book_filename = get_clean_book_filename(pg_index)
+    book_filename = get_data_filename(pg_index,'raw_books')
+    clean_book_filename = get_data_filename(pg_index,'books')
     book = open(book_filename, 'r', encoding='latin-1')
     clean_book = open(clean_book_filename, 'w')
     write_lines = False
@@ -210,12 +198,12 @@ def save_clean_book(pg_index):
 def divide_book_into_chapters(book_id):
     if not os.path.exists('../data/book_chapters'):
         os.makedirs('../data/book_chapters')
-    book_filename = get_clean_book_filename(book_id)
+    book_filename = get_data_filename(book_id,'books')
     count_chapters = 0
     count_lines_in_chapter = 0
     previous_blank_line = False
     book = open(book_filename, 'r', encoding='latin-1')
-    book_chapter = open(get_chapter_filename(book_id,count_chapters), 'w')
+    book_chapter = open(get_data_filename(book_id,'book_chapters',count_chapters), 'w')
     for l in book:
         if (count_lines_in_chapter < 3000) and ((len(l) > 1) or (count_lines_in_chapter < 20)):
             previous_blank_line = False
@@ -225,7 +213,7 @@ def divide_book_into_chapters(book_id):
             count_lines_in_chapter = 0
             count_chapters += 1
             book_chapter.close()
-            book_chapter = open(get_chapter_filename(book_id,count_chapters), 'w')
+            book_chapter = open(get_data_filename(book_id,'book_chapters',count_chapters), 'w')
         elif (len(l) == 1):
             count_lines_in_chapter += 1
             previous_blank_line = True
@@ -266,9 +254,9 @@ def create_book_dataset():
             if (file_exists):
                 zip_filename = get_zip_filename(pg_index)
                 text_filename = get_text_filename(pg_index)
-                book_filename = get_raw_book_filename(pg_index)
-                clean_book_filename = get_clean_book_filename(pg_index)
-                summary_filename = get_summary_filename(pg_index)
+                book_filename = get_data_filename(pg_index,'raw_books')
+                clean_book_filename = get_data_filename(pg_index,'books')
+                summary_filename = get_data_filename(pg_index,'summaries')
                 extract_book(pg_index, zip_filename,
                              text_filename, book_filename)
                 save_summary(df_summaries, new_title, summary_filename)
@@ -286,7 +274,7 @@ def create_book_dataset():
 
 
 def first_lines_chapter(book_id,chapter_num):
-    book_chapter = open(get_chapter_filename(book_id,chapter_num), 'r')
+    book_chapter = open(get_data_filename(book_id,'book_chapters',chapter_num), 'r')
     lines = ''
     num_lines = 0
     if book_chapter.readable():
@@ -302,7 +290,7 @@ def first_lines_chapter(book_id,chapter_num):
 
 def process_book(book_id):
     num_chapters = 0
-    if not os.path.isfile(get_raw_book_filename(book_id)):
+    if not os.path.isfile(get_data_filename(book_id,'raw_books')):
         book_id=-1
     if book_id>=0:
         save_clean_book(book_id)

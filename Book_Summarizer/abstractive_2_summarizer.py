@@ -9,7 +9,7 @@ import spacy
 import pathlib
 from regex import Regex, UNICODE, IGNORECASE
 from extractive_summarizer import create_extractive_summary_book
-from data_download_and_stats import get_clean_book_filename, get_abstractive_2_summary_filename
+from data_download_and_stats import get_data_filename, get_results_filename
 from nats.pointer_generator_network.model import *
 import argparse
 
@@ -59,14 +59,20 @@ def process_text_in(file_in, file_out):
     for sen in whole_article.sents:
         sen = [k.text for k in sen if '\n' not in k.text]
         curr_len += len(sen)
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-        if curr_len > 400:
+        if curr_len > 200:
             article = ' '.join(sen_arr)
             processed_book.write(title + summary + '<sec>' + article)
             processed_book.write('\n')
             sen_arr = []
+            curr_len = 0
+            num_segments += 1
+        sen = ' '.join(sen)
+        sen_arr.append(sen)
+    article = ' '.join(sen_arr)
+    processed_book.write(title + summary + '<sec>' + article)
+    processed_book.write('\n')
     processed_book.close()
+    return num_segments
 
 
 # adapted from:
@@ -89,6 +95,7 @@ def process_text_out(filename_in, filename_out):
         lines.append(line)
     file_in.close()
     file_out.close()
+    return lines
 
 
 # adapted from:
@@ -160,7 +167,7 @@ def detokenize_line(line):
                 word = word.upper()
             text += pre_spc + word
             pre_spc = ' '
-        if Regex(FINAL_PUNCT).match(word):
+        if Regex(FINAL_PUNCT).match(word) and (text_len_last_final_punct == 0):
             capitalize_next = True
             text_len_last_final_punct = len(text)
     # strip leading/trailing space
@@ -169,26 +176,20 @@ def detokenize_line(line):
     return text
 
 
-def create_abstractive_2_summary_book(book_id):
-    if not os.path.exists('../results/abstractive_2_summaries'):
-        os.makedirs('../results/abstractive_2_summaries')
+def create_abstractive_2_summary_chapter(book_id,chapter):
     if not os.path.exists('../sum_data'):
         os.makedirs('../sum_data')
-    process_text_in(get_clean_book_filename(book_id), '../sum_data/test.txt')
+    num_segments = process_text_in(get_data_filename(book_id,'book_chapters',chapter), '../sum_data/test.txt')
     call_abstractive_summarizer()
-    # process abstractive summary summaries.txt into abstractive summary
-    # (detokenize)
-    process_text_out('../nats_results/summaries.txt',
-                     get_abstractive_2_summary_filename(book_id, 0))
-    process_text_in(get_abstractive_2_summary_filename(
-        book_id, 0), '../sum_data/test.txt')
-    call_abstractive_summarizer()
-    # process abstractive summary summaries.txt into abstractive summary
-    # (detokenize)
-    process_text_out('../nats_results/summaries.txt',
-                     get_abstractive_2_summary_filename(book_id, 1))
-    shutil.copyfile(get_abstractive_summary_filename(book_id, 1),
-                    get_abstractive_summary_filename(book_id, -1))
+    abstractive_sentences = process_text_out('../nats_results/summaries.txt',
+                     'tmp.txt')
+    level = 0
+    while num_segments > 5 and level < 4:
+        num_segments = process_text_in('tmp.txt', '../sum_data/test.txt')
+        call_abstractive_summarizer()
+        abstractive_sentences = process_text_out('../nats_results/summaries.txt','tmp.txt')
+        level += 1
+    return abstractive_sentences
 
 
 def call_abstractive_summarizer():
