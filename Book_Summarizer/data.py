@@ -8,6 +8,7 @@ import csv
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 
+
 def get_text_filename(book_id,chapter_num=-1):
     if chapter_num!=-1:
         filename = str(book_id) + '-' + str(chapter_num) + '.txt'
@@ -15,11 +16,14 @@ def get_text_filename(book_id,chapter_num=-1):
         filename = str(book_id) + ".txt"
     return filename
 
+
 def get_zip_filename(book_id):
     return str(book_id) + ".zip"
 
+
 def get_data_filename(book_id, foldername, chapter_num=-1):
     return '../data/' + foldername + '/' + get_text_filename(book_id,chapter_num)
+
 
 def get_summary_extension(args):
     ext = ''
@@ -38,11 +42,14 @@ def get_summary_extension(args):
             ext = ext + '-aa'
     return ext
 
+
 def get_results_filename(book_id, args):
     return '../results/summaries/' + str(book_id) + get_summary_extension(args) + '.txt'
 
+
 def get_analysis_filename(book_id, args):
     return '../results/analysis/' + str(book_id) + get_summary_extension(args) + '.csv'
+
 
 # calculate_data_stats(book_filename,summary_filename)
 #
@@ -300,3 +307,7 @@ def process_book(book_id):
         save_clean_book(book_id)
         num_chapters = divide_book_into_chapters(book_id)
     return book_id, num_chapters
+
+
+if __name__ == "__main__":
+    create_book_dataset()

@@ -1,12 +1,11 @@
 # entity extraction
 
-import spacy
+from spacy import load
 from fuzzywuzzy import fuzz
 import operator
-import os
 import csv
 
-from data_download_and_stats import get_text_filename, get_data_filename, get_results_filename
+from data import get_data_filename
 
 entity_types = ["PERSON", "NORP", "FAC", "ORG", "GPE", "LOC", "PRODUCT",
                 "EVENT", "WORK_OF_ART", "LAW", "LANGUAGE"]

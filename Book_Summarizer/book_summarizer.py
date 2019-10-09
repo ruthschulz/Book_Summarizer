@@ -13,28 +13,26 @@
 
 from entity_extraction import find_entities_book, find_entities_chapter, create_sentence
 from entity_extraction import save_sorted_entities_book, save_sorted_entities_chapter
-from data_download_and_stats import first_lines_chapter, process_book, get_data_filename
-from data_download_and_stats import get_results_filename, get_analysis_filename
+from data import first_lines_chapter, process_book, get_data_filename
+from data import get_results_filename, get_analysis_filename
 from extractive_summarizer import find_relevant_quote
 from abstractive_summarizer import create_abstr_extr_summary_chapter, create_abstr_abstr_summary_chapter
-import os
-import sys
-from os import listdir
-from os.path import isfile, join
-import spacy
+from os import listdir, makedirs
+from os.path import isfile, join, exists
+from spacy import load
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.models import TfDocumentModel
-from sumy.evaluation import cosine_similarity, rouge_n
+from sumy.evaluation import cosine_similarity
 import csv
 import argparse
 
 
 def summarize_book(book_id, num_chapters, args):
-    if not os.path.exists('../results/summaries'):
-        os.makedirs('../results/summaries')
+    if not exists('../results/summaries'):
+        makedirs('../results/summaries')
     summary_filename = get_results_filename(book_id,args)
-    if os.path.isfile(summary_filename) and not args.w:
+    if isfile(summary_filename) and not args.w:
         return
     with open(summary_filename, 'w') as complete_summary:
         if args.en:
@@ -99,10 +97,10 @@ def summarize_book(book_id, num_chapters, args):
 def load_summary(filename):
     spacy_available = True
     try:
-        nlp = spacy.load('en_core_web_lg')
+        nlp = load('en_core_web_lg')
     except:
         spacy_available = False
-    if not os.path.isfile(filename):
+    if not isfile(filename):
         return '', '', ''
     if spacy_available:
         with open(filename,'r') as summary_file:
@@ -117,8 +115,8 @@ def load_summary(filename):
 
 
 def analyze_summaries(book_id, args):
-    if not os.path.exists('../results/analysis'):
-        os.makedirs('../results/analysis')
+    if not exists('../results/analysis'):
+        makedirs('../results/analysis')
     analysis_data = []
     summary_doc, summary_model = load_summary(
         get_data_filename(book_id,'summaries'))
@@ -157,8 +155,8 @@ def main():
     # if -b is not given, all raw books in raw_books folder will be summarized
     # otherwise argument following -b should be an integer book_id,
     # where a book text file named book_id.txt is in the raw_books folder
-    if not os.path.exists('../results'):
-        os.makedirs('../results')
+    if not exists('../results'):
+        makedirs('../results')
     if (args.b == -1):
         book_files = [f for f in listdir(
             '../data/raw_books') if isfile(join('../data/raw_books', f))]

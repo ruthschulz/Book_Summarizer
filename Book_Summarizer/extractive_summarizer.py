@@ -4,7 +4,7 @@
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.luhn import LuhnSummarizer
-from data_download_and_stats import get_data_filename
+from data import get_data_filename
 
 
 # create_extractive_summary_chapter(book_id, chapter, summarizer, size)

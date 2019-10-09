@@ -2,14 +2,12 @@
 # create an abstractive summary from chapters of a large document
 
 import re
-import os
-import sys
-import shutil
-import spacy
-import pathlib
+from os import makedirs
+from os.path import exists
+from spacy import load
 from regex import Regex, UNICODE, IGNORECASE
 from extractive_summarizer import find_relevant_quote
-from data_download_and_stats import get_data_filename
+from data import get_data_filename
 from nats.pointer_generator_network.model import *
 import argparse
 
@@ -174,8 +172,8 @@ def detokenize_line(line):
 
 
 def create_abstr_abstr_summary_chapter(book_id,chapter):
-    if not os.path.exists('../sum_data'):
-        os.makedirs('../sum_data')
+    if not exists('../sum_data'):
+        makedirs('../sum_data')
     num_segments = process_text_in(get_data_filename(book_id,'book_chapters',chapter), '../sum_data/test.txt')
     call_abstractive_summarizer()
     abstractive_sentences = process_text_out('../nats_results/summaries.txt',
@@ -190,8 +188,8 @@ def create_abstr_abstr_summary_chapter(book_id,chapter):
 
 
 def create_abstr_extr_summary_chapter(book_id, chapter):
-    if not os.path.exists('../sum_data'):
-        os.makedirs('../sum_data')
+    if not exists('../sum_data'):
+        makedirs('../sum_data')
     book_abstractive_summary_filename = '../sum_data/test.txt'
     extractive_summary_filename = 'tmp_in.txt'
     quote = find_relevant_quote(book_id, chapter, 5)
