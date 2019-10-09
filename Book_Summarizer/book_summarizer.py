@@ -35,6 +35,8 @@ def summarize_book(book_id, num_chapters, args):
     if not os.path.exists('../results/summaries'):
         os.makedirs('../results/summaries')
     summary_filename = get_results_filename(book_id,args)
+    if os.path.isfile(summary_filename) and not args.w:
+        return
     complete_summary = open(summary_filename, 'w')
     if args.en:
         # find characters and key words for book
@@ -151,6 +153,8 @@ def main():
         "-fl", help="include the first lines of each chapter", action="store_true")
     parser.add_argument(
         "-analysis", help="analyze all summaries", action="store_true")
+    parser.add_argument(
+        "-w", help="write over existing summaries", action="store_true")
     args = parser.parse_args()
     # if -b is not given, all raw books in raw_books folder will be summarized
     # otherwise argument following -b should be an integer book_id,
