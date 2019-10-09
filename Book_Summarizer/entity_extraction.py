@@ -45,7 +45,10 @@ def remove_characters_from_entities(characters, entities):
 
 def find_entities_book(book_id):
     filename = get_data_filename(book_id,'books')
-    nlp = spacy.load('en_core_web_sm')
+    try:
+        nlp = spacy.load('en_core_web_lg')
+    except:
+        nlp = spacy.load('en_core_web_sm')
     book = open(filename, 'r')
     book_text = ' '.join(book)
     if len(book_text) > 1000000:
@@ -56,7 +59,7 @@ def find_entities_book(book_id):
     key_entities = dict()
     for ent in doc.ents:
         new_entity = ent.text.replace('\n', '')
-        new_entity.strip()
+        new_entity = new_entity.strip()
         if len(new_entity) > 0:
             if (ent.label_ in entity_types):
                 if (new_entity in key_entities):
@@ -85,7 +88,10 @@ def find_entities_book(book_id):
 
 def find_entities_chapter(book_id, chapter, book_characters, book_entities):
     filename = get_data_filename(book_id, 'book_chapters', chapter)
-    nlp = spacy.load('en_core_web_sm')
+    try:
+        nlp = spacy.load('en_core_web_lg')
+    except:
+        nlp = spacy.load('en_core_web_sm')
     chapter = open(filename, 'r')
     chapter_text = ' '.join(chapter)
     doc = nlp(chapter_text)
@@ -112,8 +118,7 @@ def find_entities_chapter(book_id, chapter, book_characters, book_entities):
 def create_sentence(entities, about_book=True, about_characters=True, chapter=-1):
     sentence = ''
     if (len(entities) > 0):
-        sentence = ("Book " if about_book else "Chapter " + str(chapter) + " ") + \
-            ("characters: " if about_characters else "key terms: ")
+        sentence = "Characters: " if about_characters else "Key terms: "
         sorted_entities = sorted(
             entities.items(), key=operator.itemgetter(1), reverse=True)
         num_to_print = (min(10, len(sorted_entities)-1)

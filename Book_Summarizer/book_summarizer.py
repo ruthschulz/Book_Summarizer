@@ -47,10 +47,13 @@ def summarize_book(book_id, num_chapters, args):
             book_entities, about_book=True, about_characters=False)
         complete_summary.write(line + '\n')
         save_sorted_entities_book(book_characters, book_entities, book_id)
+        complete_summary.write('\n')
     # for each chapter
     for chapter in range(num_chapters):
+        line = "Chapter " + str(chapter)
+        complete_summary.write(line + '\n')
         if args.fl:
-            line = "\nChapter " + str(chapter) + ", starting:"
+            line = "Starting:"
             complete_summary.write(line + '\n')
             # find first two non-empty lines of chapter
             # Print first two non-empty lines of chapter
@@ -76,7 +79,7 @@ def summarize_book(book_id, num_chapters, args):
             quote = find_relevant_quote(book_id, chapter)
             # Print quote from chapter
             for q in quote:
-                line = 'Quote from chapter: "' + str(q) + '"'
+                line = 'Quote: "' + str(q) + '"'
                 complete_summary.write(line + '\n')
         if args.ae:
             # Print abstractive summary for chapter
@@ -87,6 +90,7 @@ def summarize_book(book_id, num_chapters, args):
             abstractive_2_summary = create_abstractive_2_summary_chapter(book_id,chapter)
             for line in abstractive_2_summary:
                 complete_summary.write(line)
+        complete_summary.write('\n')
     complete_summary.close()
     if args.analysis:
         analyze_summaries(book_id, args)
@@ -123,6 +127,7 @@ def analyze_summaries(book_id, args):
     if summary_doc != '':
         if new_summary_doc != '':
             analysis_data.append(['word embeddings similarity', summary_doc.similarity(new_summary_doc)])
+    if summary_model != '':
         if new_summary_model != '':
             analysis_data.append(['cosine similarity', cosine_similarity(summary_model, new_summary_model)])
     with open(get_analysis_filename(book_id,args), 'w') as csvFile:
