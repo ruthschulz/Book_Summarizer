@@ -55,20 +55,18 @@ def tokenize_book(input_data):
 
 def tokenize_file(file_in, file_out):
     # book may also be extractive summary
-    book = open(file_in, 'rb')
-    book_text = ''
-    # remove special characters and make lower case
-    for line in book:
-        line = line.decode('utf-8').encode('ascii', 'ignore').decode('ascii')
-        book_text = book_text + ' ' + line.lower()
-    book.close()
+    with open(file_in, 'rb') as book:
+        book_text = ''
+        # remove special characters and make lower case
+        for line in book:
+            line = line.decode('utf-8').encode('ascii', 'ignore').decode('ascii')
+            book_text = book_text + ' ' + line.lower()
     if len(book_text) > 1000000:
         book_text = book_text[:1000000]
     # tokenize using spacy and add <s>, </s>, and <sec> tags
     tokenized_book = tokenize_book(book_text)
-    processed_book = open(file_out, 'w')
-    processed_book.write(tokenized_book)
-    processed_book.close()
+    with open(file_out, 'w') as processed_book:
+        processed_book.write(tokenized_book)
 
 
 def tokenize_chapter_summary(book_id, chapter):
@@ -76,12 +74,10 @@ def tokenize_chapter_summary(book_id, chapter):
         os.makedirs('../sum_data')
     book_abstractive_summary_filename = '../sum_data/test.txt'
     extractive_summary_filename = 'tmp_in.txt'
-    book_summary = open(book_abstractive_summary_filename,'w')
     quote = find_relevant_quote(book_id, chapter, 5)
-    extractive_summary = open(extractive_summary_filename,'w')
-    for q in quote:
-        extractive_summary.write(str(q) + '\n')
-    extractive_summary.close()
+    with open(extractive_summary_filename, 'w') as extractive_summary:
+        for q in quote:
+            extractive_summary.write(str(q) + '\n')
     tokenize_file(extractive_summary_filename,
                   book_abstractive_summary_filename)
 
@@ -89,20 +85,19 @@ def tokenize_chapter_summary(book_id, chapter):
 # adapted from:
 # https://github.com/ufal/mtmonkey/blob/master/worker/src/util/fileprocess.py
 def detokenize_summary(filename_in):
-    file_in = open(filename_in, 'r')
     lines = []
-    for line in file_in:
-        line = line.rstrip('\r\n')
-        line = line.replace('<s> summary </s>', '')
-        line = line.replace('<s> title </s>', '')
-        line = line.replace('<s>', '')
-        line = line.replace('</s>', '')
-        line = line.replace('<sec>', '\n')
-        line = line.replace('<stop>', '')
-        line = line.replace('<pad>', '')
-        line = detokenize_line(line)
-        lines.append(line)
-    file_in.close()
+    with open(filename_in, 'r') as file_in:
+        for line in file_in:
+            line = line.rstrip('\r\n')
+            line = line.replace('<s> summary </s>', '')
+            line = line.replace('<s> title </s>', '')
+            line = line.replace('<s>', '')
+            line = line.replace('</s>', '')
+            line = line.replace('<sec>', '\n')
+            line = line.replace('<stop>', '')
+            line = line.replace('<pad>', '')
+            line = detokenize_line(line)
+            lines.append(line)
     return lines
 
 

@@ -49,12 +49,11 @@ def find_entities_book(book_id):
         nlp = spacy.load('en_core_web_lg')
     except:
         nlp = spacy.load('en_core_web_sm')
-    book = open(filename, 'r')
-    book_text = ' '.join(book)
-    if len(book_text) > 1000000:
-        book_text = book_text[:1000000]
-    doc = nlp(book_text)
-    book.close()
+    with open(filename, 'r') as book:
+        book_text = ' '.join(book)
+        if len(book_text) > 1000000:
+            book_text = book_text[:1000000]
+        doc = nlp(book_text)
     characters = dict()
     key_entities = dict()
     for ent in doc.ents:
@@ -92,10 +91,9 @@ def find_entities_chapter(book_id, chapter, book_characters, book_entities):
         nlp = spacy.load('en_core_web_lg')
     except:
         nlp = spacy.load('en_core_web_sm')
-    chapter = open(filename, 'r')
-    chapter_text = ' '.join(chapter)
-    doc = nlp(chapter_text)
-    chapter.close()
+    with open(filename, 'r') as chapter:
+        chapter_text = ' '.join(chapter)
+        doc = nlp(chapter_text)
     characters = dict()
     key_entities = dict()
     for ent in doc.ents:
@@ -138,7 +136,6 @@ def save_sorted_entities_book(characters, entities, book_id):
         writer = csv.writer(csvFile)
         writer.writerows(sorted_characters)
         writer.writerows(sorted_entities)
-    csvFile.close()
 
 
 def save_sorted_entities_chapter(characters, entities, book_id, chapter):
@@ -151,4 +148,3 @@ def save_sorted_entities_chapter(characters, entities, book_id, chapter):
         writer.writerows([['Chapter ' + str(chapter)]])
         writer.writerows(sorted_characters)
         writer.writerows(sorted_entities)
-    csvFile.close()

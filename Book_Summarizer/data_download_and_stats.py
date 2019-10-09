@@ -166,27 +166,23 @@ def save_clean_book(pg_index):
     text_filename = get_text_filename(pg_index)
     book_filename = get_data_filename(pg_index,'raw_books')
     clean_book_filename = get_data_filename(pg_index,'books')
-    book = open(book_filename, 'r', encoding='latin-1')
-    clean_book = open(clean_book_filename, 'w')
-    write_lines = False
-    for l in book:
-        if (l[:12] == '*** START OF') or (l[:11] == '***START OF') or (l[:11] == '*END*THE SM'):
-            write_lines = True
-        elif (l[:10] == '*** END OF') or (l[:9] == '***END OF'):
+    with open(book_filename, 'r', encoding='latin-1') as book:
+        with open(clean_book_filename, 'w') as clean_book:
             write_lines = False
-        elif write_lines:
-            clean_book.write(l)
-    book.close()
-    clean_book.close()
+            for l in book:
+                if (l[:12] == '*** START OF') or (l[:11] == '***START OF') or (l[:11] == '*END*THE SM'):
+                    write_lines = True
+                elif (l[:10] == '*** END OF') or (l[:9] == '***END OF'):
+                    write_lines = False
+                elif write_lines:
+                    clean_book.write(l)
     # if the formatting didn't match the above, just use the complete
     # book with project gutenberg information
     if os.stat(clean_book_filename).st_size == 0:
-        book = open(book_filename, 'r', encoding='latin-1')
-        clean_book = open(clean_book_filename, 'w')
-        for l in book:
-            clean_book.write(l)
-        book.close()
-        clean_book.close()
+        with open(book_filename, 'r', encoding='latin-1') as book:
+            with open(clean_book_filename, 'w') as clean_book:
+                for l in book:
+                    clean_book.write(l)
 
 
 # divide_book_into_chapters(book_id)
@@ -205,28 +201,34 @@ def divide_book_into_chapters(book_id):
     count_chapters = 0
     count_lines_in_chapter = 0
     previous_blank_line = False
-    book = open(book_filename, 'r', encoding='latin-1')
-    book_chapter = open(get_data_filename(book_id,'book_chapters',count_chapters), 'w')
-    for l in book:
-        if (count_lines_in_chapter < 3000) and ((len(l) > 1) or (count_lines_in_chapter < 20)):
-            previous_blank_line = False
-            count_lines_in_chapter += 1
-            book_chapter.write(l)
-        elif (len(l) == 1) and ((previous_blank_line == True) or (count_lines_in_chapter >= 3000)):
-            count_lines_in_chapter = 0
-            count_chapters += 1
-            book_chapter.close()
-            book_chapter = open(get_data_filename(book_id,'book_chapters',count_chapters), 'w')
-        elif (len(l) == 1):
-            count_lines_in_chapter += 1
-            previous_blank_line = True
-            book_chapter.write(l)
-        else:
-            count_lines_in_chapter += 1
-            book_chapter.write(l)
-    book_chapter.close()
-    book.close()
+    with open(book_filename, 'r', encoding='latin-1') as book:
+        lines = []
+        for l in book:
+            if (count_lines_in_chapter < 3000) and ((len(l) > 1) or (count_lines_in_chapter < 20)):
+                previous_blank_line = False
+                count_lines_in_chapter += 1
+                lines.append(l)
+            elif (len(l) == 1) and ((previous_blank_line == True) or (count_lines_in_chapter >= 3000)):
+                count_lines_in_chapter = 0
+                save_chapter(get_data_filename(book_id,'book_chapters',count_chapters),lines)
+                count_chapters += 1
+                lines = []
+            elif (len(l) == 1):
+                count_lines_in_chapter += 1
+                previous_blank_line = True
+                lines.append(l)
+            else:
+                count_lines_in_chapter += 1
+                lines.append(l)
+        save_chapter(get_data_filename(book_id,'book_chapters',count_chapters),lines)
+        count_chapters += 1
     return count_chapters
+
+
+def save_chapter(filename, lines):
+    with open(filename, 'w') as chapter:
+        for l in lines:
+            chapter.write(l)
 
 
 def create_book_dataset():
@@ -277,17 +279,16 @@ def create_book_dataset():
 
 
 def first_lines_chapter(book_id,chapter_num):
-    book_chapter = open(get_data_filename(book_id,'book_chapters',chapter_num), 'r')
     lines = ''
-    num_lines = 0
-    if book_chapter.readable():
-        for l in book_chapter:
-            if len(l)>1:
-                lines = lines + l.strip('\n') + ' '
-                num_lines += 1
-            if (num_lines>=2):
-                break
-    book_chapter.close()
+    with open(get_data_filename(book_id,'book_chapters',chapter_num), 'r') as book_chapter:
+        num_lines = 0
+        if book_chapter.readable():
+            for l in book_chapter:
+                if len(l)>1:
+                    lines = lines + l.strip('\n') + ' '
+                    num_lines += 1
+                if (num_lines>=2):
+                    break
     return (lines + '...\n')
 
 

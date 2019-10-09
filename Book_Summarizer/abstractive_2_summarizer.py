@@ -21,13 +21,12 @@ FINAL_PUNCT = (r'([\.!?])([\'\"\)\]\p{Pf}\%])*$')
 
 def process_text_in(file_in, file_out):
     # text may be book or previous level abstractive summary
-    book = open(file_in, 'rb')
-    book_text = ''
-    # remove special characters and make lower case
-    for line in book:
-        line = line.decode('utf-8').encode('ascii', 'ignore').decode('ascii')
-        book_text = book_text + ' ' + line.lower()
-    book.close()
+    with open(file_in, 'rb') as book:
+        book_text = ''
+        # remove special characters and make lower case
+        for line in book:
+            line = line.decode('utf-8').encode('ascii', 'ignore').decode('ascii')
+            book_text = book_text + ' ' + line.lower()
     if len(book_text) > 1000000:
         book_text = book_text[:1000000]
     nlp = spacy.load('en_core_web_sm', disable=['tagger', 'ner'])
@@ -36,66 +35,63 @@ def process_text_in(file_in, file_out):
     if book_text == None or summary == None or title == None:
         return ''
     # break down article into 400 token chunks
-    processed_book = open(file_out, 'w')
-    summary = nlp(summary)
-    sen_arr = []
-    for sen in summary.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        sen = ['<s>']+sen+['</s>']
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    summary = ' '.join(sen_arr)
-    title = nlp(title)
-    sen_arr = []
-    for sen in title.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        sen = ['<s>']+sen+['</s>']
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    title = ' '.join(sen_arr)
-    whole_article = nlp(book_text)
-    sen_arr = []
-    curr_len = 0
-    num_segments = 0
-    for sen in whole_article.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        curr_len += len(sen)
-        if curr_len > 200:
-            article = ' '.join(sen_arr)
-            processed_book.write(title + summary + '<sec>' + article)
-            processed_book.write('\n')
-            sen_arr = []
-            curr_len = 0
-            num_segments += 1
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    article = ' '.join(sen_arr)
-    processed_book.write(title + summary + '<sec>' + article)
-    processed_book.write('\n')
-    processed_book.close()
+    with open(file_out, 'w') as processed_book:
+        summary = nlp(summary)
+        sen_arr = []
+        for sen in summary.sents:
+            sen = [k.text for k in sen if '\n' not in k.text]
+            sen = ['<s>']+sen+['</s>']
+            sen = ' '.join(sen)
+            sen_arr.append(sen)
+        summary = ' '.join(sen_arr)
+        title = nlp(title)
+        sen_arr = []
+        for sen in title.sents:
+            sen = [k.text for k in sen if '\n' not in k.text]
+            sen = ['<s>']+sen+['</s>']
+            sen = ' '.join(sen)
+            sen_arr.append(sen)
+        title = ' '.join(sen_arr)
+        whole_article = nlp(book_text)
+        sen_arr = []
+        curr_len = 0
+        num_segments = 0
+        for sen in whole_article.sents:
+            sen = [k.text for k in sen if '\n' not in k.text]
+            curr_len += len(sen)
+            if curr_len > 200:
+                article = ' '.join(sen_arr)
+                processed_book.write(title + summary + '<sec>' + article)
+                processed_book.write('\n')
+                sen_arr = []
+                curr_len = 0
+                num_segments += 1
+            sen = ' '.join(sen)
+            sen_arr.append(sen)
+        article = ' '.join(sen_arr)
+        processed_book.write(title + summary + '<sec>' + article)
+        processed_book.write('\n')
     return num_segments
 
 
 # adapted from:
 # https://github.com/ufal/mtmonkey/blob/master/worker/src/util/fileprocess.py
 def process_text_out(filename_in, filename_out):
-    file_in = open(filename_in, 'r')
-    file_out = open(filename_out, 'w')
-    lines = []
-    for line in file_in:
-        line = line.rstrip('\r\n')
-        line = line.replace('<s> summary </s>', '')
-        line = line.replace('<s> title </s>', '')
-        line = line.replace('<s>', '')
-        line = line.replace('</s>', '')
-        line = line.replace('<sec>', '\n')
-        line = line.replace('<stop>', '')
-        line = line.replace('<pad>', '')
-        line = detokenize_line(line)
-        file_out.write(line)
-        lines.append(line)
-    file_in.close()
-    file_out.close()
+    with open(filename_in, 'r') as file_in:
+        with open(filename_out, 'w') as file_out:
+            lines = []
+            for line in file_in:
+                line = line.rstrip('\r\n')
+                line = line.replace('<s> summary </s>', '')
+                line = line.replace('<s> title </s>', '')
+                line = line.replace('<s>', '')
+                line = line.replace('</s>', '')
+                line = line.replace('<sec>', '\n')
+                line = line.replace('<stop>', '')
+                line = line.replace('<pad>', '')
+                line = detokenize_line(line)
+                file_out.write(line)
+                lines.append(line)
     return lines
 
 
