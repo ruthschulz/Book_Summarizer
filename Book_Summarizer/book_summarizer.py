@@ -16,8 +16,7 @@ from entity_extraction import save_sorted_entities_book, save_sorted_entities_ch
 from data_download_and_stats import first_lines_chapter, process_book, get_data_filename
 from data_download_and_stats import get_results_filename, get_analysis_filename
 from extractive_summarizer import find_relevant_quote
-from abstractive_summarizer import create_abstractive_summary_chapter
-from abstractive_2_summarizer import create_abstractive_2_summary_chapter
+from abstractive_summarizer import create_abstr_extr_summary_chapter, create_abstr_abstr_summary_chapter
 import os
 import sys
 from os import listdir
@@ -85,12 +84,12 @@ def summarize_book(book_id, num_chapters, args):
                     complete_summary.write(line + '\n')
             if args.ae:
                 # Print abstractive summary for chapter
-                abstractive_summary = create_abstractive_summary_chapter(book_id,chapter)
-                for line in abstractive_summary:
+                abstr_extr_summary = create_abstr_extr_summary_chapter(book_id,chapter)
+                for line in abstr_extr_summary:
                     complete_summary.write(line)
             if args.aa:
-                abstractive_2_summary = create_abstractive_2_summary_chapter(book_id,chapter)
-                for line in abstractive_2_summary:
+                abstr_abstr_summary = create_abstr_abstr_summary_chapter(book_id,chapter)
+                for line in abstr_abstr_summary:
                     complete_summary.write(line)
             complete_summary.write('\n')
     if args.analysis:

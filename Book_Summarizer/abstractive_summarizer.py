@@ -10,7 +10,7 @@ import pathlib
 from regex import Regex, UNICODE, IGNORECASE
 from extractive_summarizer import find_relevant_quote
 from data_download_and_stats import get_data_filename
-#from nats.pointer_generator_network.model import *
+from nats.pointer_generator_network.model import *
 import argparse
 
 CONTRACTIONS = (r'^\p{Alpha}+(\'(ll|ve|re|[dsm])|n\'t)$')
@@ -19,42 +19,8 @@ NOPRESPACE_PUNCT = (r'^[\,\.\?\!\:\;\\\%\}\]\)]+$')
 FINAL_PUNCT = (r'([\.!?])([\'\"\)\]\p{Pf}\%])*$')
 
 
-def tokenize_book(input_data):
-    nlp = spacy.load('en_core_web_sm', disable=['tagger', 'ner'])
-    article = input_data
-    summary = 'summary'
-    title = 'title'
-    if article == None or summary == None or title == None:
-        return ''
-    article = nlp(article)
-    summary = nlp(summary)
-    title = nlp(title)
-    sen_arr = []
-    for sen in article.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    article = ' '.join(sen_arr)
-    sen_arr = []
-    for sen in summary.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        sen = ['<s>']+sen+['</s>']
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    summary = ' '.join(sen_arr)
-    sen_arr = []
-    for sen in title.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        sen = ['<s>']+sen+['</s>']
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    title = ' '.join(sen_arr)
-    sen_arr = [title, summary, article]
-    return title + summary + '<sec>' + article
-
-
-def tokenize_file(file_in, file_out):
-    # book may also be extractive summary
+def process_text_in(file_in, file_out):
+    # text may be book or previous level abstractive summary
     with open(file_in, 'rb') as book:
         book_text = ''
         # remove special characters and make lower case
@@ -63,41 +29,69 @@ def tokenize_file(file_in, file_out):
             book_text = book_text + ' ' + line.lower()
     if len(book_text) > 1000000:
         book_text = book_text[:1000000]
-    # tokenize using spacy and add <s>, </s>, and <sec> tags
-    tokenized_book = tokenize_book(book_text)
+    nlp = spacy.load('en_core_web_sm', disable=['tagger', 'ner'])
+    summary = 'summary'
+    title = 'title'
+    if book_text == None or summary == None or title == None:
+        return ''
+    # break down article into 400 token chunks
     with open(file_out, 'w') as processed_book:
-        processed_book.write(tokenized_book)
-
-
-def tokenize_chapter_summary(book_id, chapter):
-    if not os.path.exists('../sum_data'):
-        os.makedirs('../sum_data')
-    book_abstractive_summary_filename = '../sum_data/test.txt'
-    extractive_summary_filename = 'tmp_in.txt'
-    quote = find_relevant_quote(book_id, chapter, 5)
-    with open(extractive_summary_filename, 'w') as extractive_summary:
-        for q in quote:
-            extractive_summary.write(str(q) + '\n')
-    tokenize_file(extractive_summary_filename,
-                  book_abstractive_summary_filename)
+        summary = nlp(summary)
+        sen_arr = []
+        for sen in summary.sents:
+            sen = [k.text for k in sen if '\n' not in k.text]
+            sen = ['<s>']+sen+['</s>']
+            sen = ' '.join(sen)
+            sen_arr.append(sen)
+        summary = ' '.join(sen_arr)
+        title = nlp(title)
+        sen_arr = []
+        for sen in title.sents:
+            sen = [k.text for k in sen if '\n' not in k.text]
+            sen = ['<s>']+sen+['</s>']
+            sen = ' '.join(sen)
+            sen_arr.append(sen)
+        title = ' '.join(sen_arr)
+        whole_article = nlp(book_text)
+        sen_arr = []
+        curr_len = 0
+        num_segments = 0
+        for sen in whole_article.sents:
+            sen = [k.text for k in sen if '\n' not in k.text]
+            curr_len += len(sen)
+            if curr_len > 200:
+                article = ' '.join(sen_arr)
+                processed_book.write(title + summary + '<sec>' + article)
+                processed_book.write('\n')
+                sen_arr = []
+                curr_len = 0
+                num_segments += 1
+            sen = ' '.join(sen)
+            sen_arr.append(sen)
+        article = ' '.join(sen_arr)
+        processed_book.write(title + summary + '<sec>' + article)
+        processed_book.write('\n')
+    return num_segments
 
 
 # adapted from:
 # https://github.com/ufal/mtmonkey/blob/master/worker/src/util/fileprocess.py
-def detokenize_summary(filename_in):
-    lines = []
+def process_text_out(filename_in, filename_out):
     with open(filename_in, 'r') as file_in:
-        for line in file_in:
-            line = line.rstrip('\r\n')
-            line = line.replace('<s> summary </s>', '')
-            line = line.replace('<s> title </s>', '')
-            line = line.replace('<s>', '')
-            line = line.replace('</s>', '')
-            line = line.replace('<sec>', '\n')
-            line = line.replace('<stop>', '')
-            line = line.replace('<pad>', '')
-            line = detokenize_line(line)
-            lines.append(line)
+        with open(filename_out, 'w') as file_out:
+            lines = []
+            for line in file_in:
+                line = line.rstrip('\r\n')
+                line = line.replace('<s> summary </s>', '')
+                line = line.replace('<s> title </s>', '')
+                line = line.replace('<s>', '')
+                line = line.replace('</s>', '')
+                line = line.replace('<sec>', '\n')
+                line = line.replace('<stop>', '')
+                line = line.replace('<pad>', '')
+                line = detokenize_line(line)
+                file_out.write(line)
+                lines.append(line)
     return lines
 
 
@@ -179,8 +173,38 @@ def detokenize_line(line):
     return text
 
 
-def create_abstractive_summary_chapter(book_id,chapter):
-    tokenize_chapter_summary(book_id,chapter)
+def create_abstr_abstr_summary_chapter(book_id,chapter):
+    if not os.path.exists('../sum_data'):
+        os.makedirs('../sum_data')
+    num_segments = process_text_in(get_data_filename(book_id,'book_chapters',chapter), '../sum_data/test.txt')
+    call_abstractive_summarizer()
+    abstractive_sentences = process_text_out('../nats_results/summaries.txt',
+                     'tmp.txt')
+    level = 0
+    while num_segments > 5 and level < 4:
+        num_segments = process_text_in('tmp.txt', '../sum_data/test.txt')
+        call_abstractive_summarizer()
+        abstractive_sentences = process_text_out('../nats_results/summaries.txt','tmp.txt')
+        level += 1
+    return abstractive_sentences
+
+
+def create_abstr_extr_summary_chapter(book_id, chapter):
+    if not os.path.exists('../sum_data'):
+        os.makedirs('../sum_data')
+    book_abstractive_summary_filename = '../sum_data/test.txt'
+    extractive_summary_filename = 'tmp_in.txt'
+    quote = find_relevant_quote(book_id, chapter, 5)
+    with open(extractive_summary_filename, 'w') as extractive_summary:
+        for q in quote:
+            extractive_summary.write(str(q) + '\n')
+    num_segments = process_text_in(extractive_summary_filename,
+                  book_abstractive_summary_filename)
+    call_abstractive_summarizer()
+    return(process_text_out('../nats_results/summaries.txt','tmp.txt'))
+
+
+def call_abstractive_summarizer():
     parser = argparse.ArgumentParser()
     '''
     Use in the framework and cannot remove.
@@ -276,4 +300,3 @@ def create_abstractive_summary_chapter(book_id,chapter):
     args = parser.parse_args([])
     model = modelPointerGenerator(args)
     model.test()
-    return(detokenize_summary('../nats_results/summaries.txt'))
