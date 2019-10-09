@@ -8,9 +8,9 @@ import shutil
 import spacy
 import pathlib
 from regex import Regex, UNICODE, IGNORECASE
-from extractive_summarizer import create_extractive_summary_book
+from extractive_summarizer import find_relevant_quote
 from data_download_and_stats import get_data_filename, get_results_filename
-from nats.pointer_generator_network.model import *
+#from nats.pointer_generator_network.model import *
 import argparse
 
 CONTRACTIONS = (r'^\p{Alpha}+(\'(ll|ve|re|[dsm])|n\'t)$')
@@ -56,6 +56,7 @@ def process_text_in(file_in, file_out):
     whole_article = nlp(book_text)
     sen_arr = []
     curr_len = 0
+    num_segments = 0
     for sen in whole_article.sents:
         sen = [k.text for k in sen if '\n' not in k.text]
         curr_len += len(sen)

@@ -41,6 +41,9 @@ def get_summary_extension(args):
 def get_results_filename(book_id, args):
     return '../results/summaries/' + str(book_id) + get_summary_extension(args) + '.txt'
 
+def get_analysis_filename(book_id, args):
+    return '../results/analysis/' + str(book_id) + get_summary_extension(args) + '.csv'
+
 # calculate_data_stats(book_filename,summary_filename)
 #
 # calculates number of sentences, number of words, file size

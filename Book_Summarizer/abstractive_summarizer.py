@@ -10,7 +10,7 @@ import pathlib
 from regex import Regex, UNICODE, IGNORECASE
 from extractive_summarizer import find_relevant_quote
 from data_download_and_stats import get_data_filename
-from nats.pointer_generator_network.model import *
+#from nats.pointer_generator_network.model import *
 import argparse
 
 CONTRACTIONS = (r'^\p{Alpha}+(\'(ll|ve|re|[dsm])|n\'t)$')
@@ -80,7 +80,7 @@ def tokenize_chapter_summary(book_id, chapter):
     quote = find_relevant_quote(book_id, chapter, 5)
     extractive_summary = open(extractive_summary_filename,'w')
     for q in quote:
-        extractive_summary.write(line + '\n')
+        extractive_summary.write(str(q) + '\n')
     extractive_summary.close()
     tokenize_file(extractive_summary_filename,
                   book_abstractive_summary_filename)
