@@ -27,7 +27,7 @@ def process_text_in(file_in, file_out):
             book_text = book_text + ' ' + line.lower()
     if len(book_text) > 1000000:
         book_text = book_text[:1000000]
-    nlp = spacy.load('en_core_web_sm', disable=['tagger', 'ner'])
+    nlp = load('en_core_web_sm', disable=['tagger', 'ner'])
     summary = 'summary'
     title = 'title'
     if book_text == None or summary == None or title == None:
@@ -171,7 +171,7 @@ def detokenize_line(line):
     return text
 
 
-def create_abstr_abstr_summary_chapter(book_id,chapter):
+def create_abstr_abstr_summary_chapter(book_id,chapter,small=True):
     if not exists('../sum_data'):
         makedirs('../sum_data')
     num_segments = process_text_in(get_data_filename(book_id,'book_chapters',chapter), '../sum_data/test.txt')
@@ -179,7 +179,8 @@ def create_abstr_abstr_summary_chapter(book_id,chapter):
     abstractive_sentences = process_text_out('../nats_results/summaries.txt',
                      'tmp.txt')
     level = 0
-    while num_segments > 5 and level < 4:
+    thresh = 5 if small else 20
+    while num_segments > thresh and level < 4:
         num_segments = process_text_in('tmp.txt', '../sum_data/test.txt')
         call_abstractive_summarizer()
         abstractive_sentences = process_text_out('../nats_results/summaries.txt','tmp.txt')

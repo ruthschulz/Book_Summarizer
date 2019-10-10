@@ -27,18 +27,18 @@ def get_data_filename(book_id, foldername, chapter_num=-1):
 
 def get_summary_extension(args):
     ext = ''
-    if args.fl and args.en and args.ex and args.ae and args.aa:
+    if args.fl and args.en and (args.ex!='0') and args.ae and (args.aa!='n'):
         ext = '-all'
     else:
         if args.fl:
             ext = ext + '-fl'
         if args.en:
             ext = ext + '-en'
-        if args.ex:
+        if args.ex!='0':
             ext = ext + '-ex'
         if args.ae:
             ext = ext + '-ae'
-        if args.aa:
+        if args.aa!='n':
             ext = ext + '-aa'
     return ext
 

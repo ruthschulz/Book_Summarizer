@@ -45,9 +45,9 @@ def remove_characters_from_entities(characters, entities):
 def find_entities_book(book_id):
     filename = get_data_filename(book_id,'books')
     try:
-        nlp = spacy.load('en_core_web_lg')
+        nlp = load('en_core_web_lg')
     except:
-        nlp = spacy.load('en_core_web_sm')
+        nlp = load('en_core_web_sm')
     with open(filename, 'r') as book:
         book_text = ' '.join(book)
         if len(book_text) > 1000000:
@@ -87,9 +87,9 @@ def find_entities_book(book_id):
 def find_entities_chapter(book_id, chapter, book_characters, book_entities):
     filename = get_data_filename(book_id, 'book_chapters', chapter)
     try:
-        nlp = spacy.load('en_core_web_lg')
+        nlp = load('en_core_web_lg')
     except:
-        nlp = spacy.load('en_core_web_sm')
+        nlp = load('en_core_web_sm')
     with open(filename, 'r') as chapter:
         chapter_text = ' '.join(chapter)
         doc = nlp(chapter_text)

@@ -73,20 +73,24 @@ def summarize_book(book_id, num_chapters, args):
                     chapter_entities, about_book=False, about_characters=False, chapter=chapter)
                 if (len(line) > 0):
                     complete_summary.write(line + '\n')
-            if args.ex:
+            if int(args.ex)!=0:
                 # find quote using extractive summary techniques
-                quote = find_relevant_quote(book_id, chapter)
+                quote = find_relevant_quote(book_id, chapter, int(args.ex))
                 # Print quote from chapter
+                if len(quote)==1:
+                    complete_summary.write('Quote: ')
+                else:
+                    complete_summary.write('Quotes:\n')
                 for q in quote:
-                    line = 'Quote: "' + str(q) + '"'
+                    line = '"' + str(q) + '"'
                     complete_summary.write(line + '\n')
             if args.ae:
                 # Print abstractive summary for chapter
                 abstr_extr_summary = create_abstr_extr_summary_chapter(book_id,chapter)
                 for line in abstr_extr_summary:
                     complete_summary.write(line)
-            if args.aa:
-                abstr_abstr_summary = create_abstr_abstr_summary_chapter(book_id,chapter)
+            if args.aa!='n':
+                abstr_abstr_summary = create_abstr_abstr_summary_chapter(book_id,chapter,args.aa=='s')
                 for line in abstr_abstr_summary:
                     complete_summary.write(line)
             complete_summary.write('\n')
@@ -140,11 +144,11 @@ def main():
     parser.add_argument(
         "-en", help="include an entity summary of each chapter", action="store_true")
     parser.add_argument(
-        "-ex", help="include an extractive summary of each chapter", action="store_true")
+        "-ex", help="include an extractive summary of each chapter", nargs='?', const='1', default='0')
     parser.add_argument(
         "-ae", help="include an abstractive summary of each chapter", action="store_true")
     parser.add_argument(
-        "-aa", help="include an abstractive summary of each chapter", action="store_true")
+        "-aa", help="include an abstractive summary of each chapter", nargs='?', const='s', default='n')
     parser.add_argument(
         "-fl", help="include the first lines of each chapter", action="store_true")
     parser.add_argument(
@@ -155,6 +159,12 @@ def main():
     # if -b is not given, all raw books in raw_books folder will be summarized
     # otherwise argument following -b should be an integer book_id,
     # where a book text file named book_id.txt is in the raw_books folder
+    if args.ex not in ['0','1','2','3','4','5','6','7','8','9']:
+        print("For extractive summary, specify a number of sentences between 1 and 9")
+        return
+    if args.aa not in ['l','s','n']:
+        print("For abstractive from abstractive summary, specify l for long or s for short")
+        return
     if not exists('../results'):
         makedirs('../results')
     if (args.b == -1):
