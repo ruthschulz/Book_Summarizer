@@ -19,8 +19,8 @@ FINAL_PUNCT = (r'([\.!?])([\'\"\)\]\p{Pf}\%])*$')
 
 def process_text_in(file_in, file_out):
     # text may be book or previous level abstractive summary
+    book_text = ''
     with open(file_in, 'rb') as book:
-        book_text = ''
         # remove special characters and make lower case
         for line in book:
             line = line.decode('utf-8').encode('ascii', 'ignore').decode('ascii')
@@ -69,7 +69,7 @@ def process_text_in(file_in, file_out):
         article = ' '.join(sen_arr)
         processed_book.write(title + summary + '<sec>' + article)
         processed_book.write('\n')
-    return num_segments
+    return num_segments, book_text
 
 
 # adapted from:
@@ -150,6 +150,9 @@ def detokenize_line(line):
                 and Regex(CONTRACTIONS).match(''.join(words[pos - 1:pos + 1])):
             text += word
             pre_spc = ' '
+        elif word == "n't":
+            text += word
+            pre_spc = ' '
         # keep spaces around normal words
         else:
             if capitalize_next:
@@ -174,16 +177,25 @@ def detokenize_line(line):
 def create_abstr_abstr_summary_chapter(book_id,chapter,small=True):
     if not exists('../sum_data'):
         makedirs('../sum_data')
-    num_segments = process_text_in(get_data_filename(book_id,'book_chapters',chapter), '../sum_data/test.txt')
-    call_abstractive_summarizer()
-    abstractive_sentences = process_text_out('../nats_results/summaries.txt',
+    num_segments, book_text = process_text_in(get_data_filename(book_id, 'book_chapters', chapter), '../sum_data/test.txt')
+    if num_segments > 1:
+        call_abstractive_summarizer()
+        abstractive_sentences = process_text_out('../nats_results/summaries.txt',
                      'tmp.txt')
+    else:
+        # so short a section, can just copy across existing text
+        abstractive_sentences = book_text.replace('\n','').strip()
+        abstractive_sentences = abstractive_sentences[0].upper() + abstractive_sentences[1:]
     level = 0
     thresh = 5 if small else 20
     while num_segments > thresh and level < 4:
-        num_segments = process_text_in('tmp.txt', '../sum_data/test.txt')
-        call_abstractive_summarizer()
-        abstractive_sentences = process_text_out('../nats_results/summaries.txt','tmp.txt')
+        num_segments, book_text = process_text_in('tmp.txt', '../sum_data/test.txt')
+        if num_segments > 1:
+            call_abstractive_summarizer()
+            abstractive_sentences = process_text_out('../nats_results/summaries.txt','tmp.txt')
+        else:
+            abstractive_sentences = book_text.replace('\n','').strip()
+            abstractive_sentences = abstractive_sentences[0].upper() + abstractive_sentences[1:]
         level += 1
     return abstractive_sentences
 
