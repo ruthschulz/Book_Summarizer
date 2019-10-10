@@ -122,7 +122,7 @@ def download_from_gutenberg(pg_id):
     web_page = web_page + str(pg_id) + "/" + str(pg_id) + ".zip"
     file_exists = True
     try:
-        wget.download(web_page)
+        wget.download(web_page, 'tmp/' +str(pg_id) + '.zip')
     except:
         file_exists = False
     return file_exists
@@ -136,19 +136,19 @@ def extract_book(pg_index, zip_filename='', text_filename='', book_filename=''):
     if not os.path.exists('../data/raw_books'):
         os.makedirs('../data/raw_books')
     if len(zip_filename)==0:
-        zip_filename = get_zip_filename(pg_index)
+        zip_filename = 'tmp/' + get_zip_filename(pg_index)
     if len(text_filename)==0:
         text_filename = get_text_filename(pg_index)
     if len(book_filename)==0:
         book_filename = get_data_filename(pg_index,'raw_books')
     with ZipFile(zip_filename, 'r') as zipObj:
-        zipObj.extractall()
-    if os.path.exists(text_filename):
-        shutil.move(text_filename, book_filename)
+        zipObj.extractall('tmp')
+    if os.path.exists('tmp/' + text_filename):
+        shutil.move('tmp/' + text_filename, book_filename)
     else:
         # some files have an extra folder before the file
-        shutil.move(str(pg_index) + '/' + text_filename, book_filename)
-        shutil.rmtree(str(pg_index))
+        shutil.move('tmp/' + str(pg_index) + '/' + text_filename, book_filename)
+        shutil.rmtree('tmp/' + str(pg_index))
     os.remove(zip_filename)
 
 
@@ -245,15 +245,14 @@ def create_book_dataset():
     # if it isn't, check if it can be downloaded
     # move to books folder
     # process book to remove metadata and license information
-    if os.path.exists('../data/books'):
-        shutil.rmtree('../data/books')
-    if os.path.exists('../data/summaries'):
-        shutil.rmtree('../data/summaries')
-    if os.path.exists('../data/raw_books'):
-        shutil.rmtree('../data/raw_books')
-    os.makedirs('../data/books')
-    os.makedirs('../data/summaries')
-    os.makedirs('../data/raw_books')
+    if not os.path.exists('../data/books'):
+        os.makedirs('../data/books')
+    if not os.path.exists('../data/summaries'):
+        os.makedirs('../data/summaries')
+    if not os.path.exists('../data/raw_books'):
+        os.makedirs('../data/raw_books')
+    if not os.path.exists('tmp'):
+        os.makedirs('tmp')
     titles = dict()
     stats = []
     for index, row in df_titles.iterrows():
@@ -264,7 +263,7 @@ def create_book_dataset():
         if ((new_title not in titles) and (calculate_author_match(pg_author, summaries_author) > 40)):
             file_exists = download_from_gutenberg(pg_index)
             if (file_exists):
-                zip_filename = get_zip_filename(pg_index)
+                zip_filename = 'tmp/' + get_zip_filename(pg_index)
                 text_filename = get_text_filename(pg_index)
                 book_filename = get_data_filename(pg_index,'raw_books')
                 clean_book_filename = get_data_filename(pg_index,'books')
@@ -282,7 +281,7 @@ def create_book_dataset():
     with open('../data/data_stats.csv', 'w') as csvFile:
         writer = csv.writer(csvFile)
         writer.writerows(stats)
-    csvFile.close()
+    shutil.rmtree('tmp')
 
 
 def first_lines_chapter(book_id,chapter_num):
