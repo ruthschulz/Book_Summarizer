@@ -12,9 +12,9 @@ The project was a consulting project completed as part of the [Insight AI progra
 ## Project contents:
 - **Book_Summarizer** : All source code
 - **data** : Sample data 
-- **results** : Sample results 
 - **nats_results** : Model
-- **note_books** : Example setup and run
+- **notebooks** : Example setup and run
+- **results** : Sample results 
 
 ## Setup Environment
 
