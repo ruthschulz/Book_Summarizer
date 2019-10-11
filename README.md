@@ -57,8 +57,9 @@ git clone https://github.com/ruthschulz/LeafNATS
 mv LeafNATS/* Book_Summarizer
 ```
 
-The [model](https://drive.google.com/file/d/1EuLYK3k-U65xMtazqYskt6A97ZLe2a-n/view?usp=sharing) also needs to be downloaded and extracted into the nats_results directory.
+The [model](https://drive.google.com/file/d/1EuLYK3k-U65xMtazqYskt6A97ZLe2a-n/view?usp=sharing) also needs to be downloaded and extracted into the Book_Summarizer/nats_results directory.
 
+The [vocab](https://drive.google.com/file/d/1Kn14TMg0-ZLpnAUyJVhcuLXVWzZCD0Yg/view?usp=sharing) file also needs to be downloaded and extracted into the Book_Summarizer/sum_data directory.
 
 ## Run Book Summarizer
 
@@ -91,9 +92,9 @@ python book_summarizer.py -b 11 -fl -en -ex -aa -w
 This will save a summary called 11-fl-en-ex-aa.txt as well as an entities csv file called 11-en.csv in the results/summaries directory.
 
 
-It is also possible to analyze the summaries, comparing them to an existing summary in the data/summaries folder:
+It is also possible to analyze the created summaries, comparing them to a ground truth summary in the data/summaries folder. Currently this is ex:
 ```
-python book_summarizer.py -analysis
+python book_summarizer.py -b 11 -aa -analysis
 ```
 
 The program will then save a summary of the book in the appropriate results folder.

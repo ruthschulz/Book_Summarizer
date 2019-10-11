@@ -9,3 +9,4 @@ spacy
 pyrouge
 python-Levenshtein
 torch
+regex

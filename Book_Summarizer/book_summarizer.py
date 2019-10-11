@@ -35,70 +35,69 @@ def summarize_book(book_id, num_chapters, args):
     if not exists('../results/summaries'):
         makedirs('../results/summaries')
     summary_filename = get_results_filename(book_id, args)
-    if isfile(summary_filename) and not args.w:
-        return
-    with open(summary_filename, 'w') as complete_summary:
-        if args.en:
-            # find characters and key words for book
-            book_characters, book_entities = find_entities_book(book_id)
-            # Print out sentence for characters and key words
-            line = create_sentence(
-                book_characters, about_book=True, about_characters=True)
-            complete_summary.write(line + '\n')
-            line = create_sentence(
-                book_entities, about_book=True, about_characters=False)
-            complete_summary.write(line + '\n')
-            save_sorted_entities_book(book_characters, book_entities, book_id)
-            complete_summary.write('\n')
-        # for each chapter
-        for chapter in range(num_chapters):
-            line = "Chapter " + str(chapter)
-            complete_summary.write(line + '\n')
-            if args.fl:
-                line = "Starting:"
-                complete_summary.write(line + '\n')
-                # find first two non-empty lines of chapter
-                # Print first two non-empty lines of chapter
-                line = first_lines_chapter(book_id, chapter)
-                complete_summary.write(line)
+    if not (isfile(summary_filename) and not args.w):
+        with open(summary_filename, 'w') as complete_summary:
             if args.en:
-                # find characters and key words
-                chapter_characters, chapter_entities = find_entities_chapter(
-                    book_id, chapter, book_characters, book_entities)
-                save_sorted_entities_chapter(
-                    chapter_characters, chapter_entities, book_id, chapter)
-                # Print sentence for characters and key words from chapter
+                # find characters and key words for book
+                book_characters, book_entities = find_entities_book(book_id)
+                # Print out sentence for characters and key words
                 line = create_sentence(
-                    chapter_characters, about_book=False, about_characters=True)
-                if (len(line) > 0):
-                    complete_summary.write(line + '\n')
+                    book_characters, about_book=True, about_characters=True)
+                complete_summary.write(line + '\n')
                 line = create_sentence(
-                    chapter_entities, about_book=False, about_characters=False)
-                if (len(line) > 0):
+                    book_entities, about_book=True, about_characters=False)
+                complete_summary.write(line + '\n')
+                save_sorted_entities_book(book_characters, book_entities, book_id)
+                complete_summary.write('\n')
+            # for each chapter
+            for chapter in range(num_chapters):
+                line = "Chapter " + str(chapter)
+                complete_summary.write(line + '\n')
+                if args.fl:
+                    line = "Starting:"
                     complete_summary.write(line + '\n')
-            if int(args.ex) != 0:
-                # find quote using extractive summary techniques
-                quote = find_relevant_quote(book_id, chapter, int(args.ex))
-                # Print quote from chapter
-                if len(quote) == 1:
-                    complete_summary.write('Quote: ')
-                else:
-                    complete_summary.write('Quotes:\n')
-                for q in quote:
-                    line = '"' + str(q) + '"'
-                    complete_summary.write(line + '\n')
-            if args.ae:
-                # Print abstractive summary for chapter
-                abstr_extr_summary = create_abstr_extr_summary_chapter(
-                    book_id, chapter)
-                for line in abstr_extr_summary:
+                    # find first two non-empty lines of chapter
+                    # Print first two non-empty lines of chapter
+                    line = first_lines_chapter(book_id, chapter)
                     complete_summary.write(line)
-            if args.aa != 'n':
-                abstr_abstr_summary = create_abstr_abstr_summary_chapter(
-                    book_id, chapter, args.aa == 's')
-                for line in abstr_abstr_summary:
-                    complete_summary.write(line)
-            complete_summary.write('\n')
+                if args.en:
+                    # find characters and key words
+                    chapter_characters, chapter_entities = find_entities_chapter(
+                        book_id, chapter, book_characters, book_entities)
+                    save_sorted_entities_chapter(
+                        chapter_characters, chapter_entities, book_id, chapter)
+                    # Print sentence for characters and key words from chapter
+                    line = create_sentence(
+                        chapter_characters, about_book=False, about_characters=True)
+                    if (len(line) > 0):
+                        complete_summary.write(line + '\n')
+                    line = create_sentence(
+                        chapter_entities, about_book=False, about_characters=False)
+                    if (len(line) > 0):
+                        complete_summary.write(line + '\n')
+                if int(args.ex) != 0:
+                    # find quote using extractive summary techniques
+                    quote = find_relevant_quote(book_id, chapter, int(args.ex))
+                    # Print quote from chapter
+                    if len(quote) == 1:
+                        complete_summary.write('Quote: ')
+                    else:
+                        complete_summary.write('Quotes:\n')
+                    for q in quote:
+                        line = '"' + str(q) + '"'
+                        complete_summary.write(line + '\n')
+                if args.ae:
+                    # Print abstractive summary for chapter
+                    abstr_extr_summary = create_abstr_extr_summary_chapter(
+                        book_id, chapter)
+                    for line in abstr_extr_summary:
+                        complete_summary.write(line)
+                if args.aa != 'n':
+                    abstr_abstr_summary = create_abstr_abstr_summary_chapter(
+                        book_id, chapter, args.aa == 's')
+                    for line in abstr_abstr_summary:
+                        complete_summary.write(line)
+                complete_summary.write('\n')
     if args.analysis:
         analyze_summaries(book_id, args)
 
@@ -119,7 +118,7 @@ def load_summary(filename):
     except:
         spacy_available = False
     if not isfile(filename):
-        return '', '', ''
+        return '', ''
     if spacy_available:
         with open(filename, 'r') as summary_file:
             summary_text = ' '.join(summary_file)
@@ -149,10 +148,8 @@ def analyze_summaries(book_id, args):
     if not exists('../results/analysis'):
         makedirs('../results/analysis')
     analysis_data = []
-    summary_doc, summary_model = load_summary(
-        get_data_filename(book_id, 'summaries'))
-    new_summary_doc, new_summary_model = load_summary(
-        get_results_filename(book_id, args))
+    summary_doc, summary_model = load_summary(get_data_filename(book_id, 'summaries'))
+    new_summary_doc, new_summary_model = load_summary(get_results_filename(book_id, args))
     if summary_doc != '':
         if new_summary_doc != '':
             analysis_data.append(
