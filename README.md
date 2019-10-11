@@ -4,8 +4,8 @@
 
 BooksDistilled is a natural language summarization tool that takes in the plain text of a very long document and outputs a variety of summaries using NLP tools and a neural text summarizer.
 
-The project was a consulting project completed as part of the Insight AI program in Silicon Valley.
-Tolstoy.ai provided the inspiration and NLP advice.
+The project was a consulting project completed as part of the [Insight AI program](https://www.insightdata.ai/) in Silicon Valley.
+[Tolstoy.ai](https://tolstoy.ai/) provided the inspiration and NLP advice.
 
 [Here](http://bit.ly/BookSummarizerSlides) are the slides for the Book Summarizer project.
 
@@ -14,6 +14,7 @@ Tolstoy.ai provided the inspiration and NLP advice.
 - **data** : Sample data 
 - **results** : Sample results 
 - **nats_results** : Model
+- **note_books** : Example setup and run
 
 ## Setup Environment
 
