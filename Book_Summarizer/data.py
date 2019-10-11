@@ -16,15 +16,15 @@ from sumy.nlp.tokenizers import Tokenizer
 def get_text_filename(book_id, chapter_num=-1):
     """ Get the filename for a text document with the book identifier and chapter number. """
     if chapter_num != -1:
-        filename = str(book_id) + '-' + str(chapter_num) + '.txt'
+        filename = book_id + '-' + str(chapter_num) + '.txt'
     else:
-        filename = str(book_id) + ".txt"
+        filename = book_id + ".txt"
     return filename
 
 
 def get_zip_filename(book_id):
     """ Get the filename for a zip document with the book identifier. """
-    return str(book_id) + ".zip"
+    return book_id + ".zip"
 
 
 def get_data_filename(book_id, foldername, chapter_num=-1):
@@ -57,12 +57,12 @@ def get_results_filename(book_id, args):
     """ 
     Get the filename for a results file with the book identifier and tags specified in args. 
     """
-    return '../results/summaries/' + str(book_id) + get_summary_extension(args) + '.txt'
+    return '../results/summaries/' + book_id + get_summary_extension(args) + '.txt'
 
 
 def get_analysis_filename(book_id, args):
     """ Get the filename for the analysis csv file. """
-    return '../results/analysis/' + str(book_id) + get_summary_extension(args) + '.csv'
+    return '../results/analysis/' + book_id + get_summary_extension(args) + '.csv'
 
 
 def calculate_data_stats(book_filename, summary_filename):
@@ -223,7 +223,7 @@ def divide_book_into_chapters(book_id):
     Limits chapters to the end of the next paragraph after 3000 lines
 
     Parameters:
-    book_id: (int) the book identifier
+    book_id: (str) the book identifier
     
     Outputs:
     The chapter files are saved in the data/book_chapters folder.
@@ -321,7 +321,7 @@ def first_lines_chapter(book_id, chapter_num):
     Returns the first 2 lines of chapter chapter_num from book book_id. 
 
     Parameters:
-    book_id: (int) the book identifier
+    book_id: (str) the book identifier
     chapter_num: (int) the chapter number
 
     Returns:
@@ -345,7 +345,7 @@ def process_book(book_id):
     Processes the book book_id into a clean book and divides it into chapters. 
 
     Parameters:
-    book_id: (int) the book identifier
+    book_id: (str) the book identifier
 
     Returns:
     int book_id to confirm that the file has been successfully found
@@ -353,8 +353,8 @@ def process_book(book_id):
     """
     num_chapters = 0
     if not os.path.isfile(get_data_filename(book_id, 'raw_books')):
-        book_id = -1
-    if book_id >= 0:
+        book_id = ""
+    if book_id != "":
         save_clean_book(book_id)
         num_chapters = divide_book_into_chapters(book_id)
     return book_id, num_chapters

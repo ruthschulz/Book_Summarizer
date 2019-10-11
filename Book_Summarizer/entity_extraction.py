@@ -83,7 +83,7 @@ def find_entities_book(book_id):
     Consolidates lists so that similar entities are joined into one entity.
 
     Parameters:
-    book_id: (int) the book identifier
+    book_id: (str) the book identifier
 
     Returns:
     list: characters
@@ -135,7 +135,7 @@ def find_entities_chapter(book_id, chapter, book_characters, book_entities):
     Find the entities for a chapter, matching the entities to the book entities.
 
     Parameters:
-    book_id: (int) the book identifier
+    book_id: (str) the book identifier
     chapter: the chapter to find the entities in
     book_characters: the characters that were found in the whole book
     book_entities: the key words that were found in the whole book
@@ -203,13 +203,13 @@ def save_sorted_entities_book(characters, entities, book_id):
     Parameters:
     characters: list of the characters in the book
     entities: list of the key words in the book
-    book_id: (int) the book identifier
+    book_id: (str) the book identifier
     """
     sorted_characters = sorted(
         characters.items(), key=operator.itemgetter(1), reverse=True)
     sorted_entities = sorted(
         entities.items(), key=operator.itemgetter(1), reverse=True)
-    with open('../results/summaries/' + str(book_id) + '.csv', 'w') as csvFile:
+    with open('../results/summaries/' + book_id + '.csv', 'w') as csvFile:
         writer = csv.writer(csvFile)
         writer.writerows(sorted_characters)
         writer.writerows(sorted_entities)
@@ -222,14 +222,14 @@ def save_sorted_entities_chapter(characters, entities, book_id, chapter):
     Parameters:
     characters: list of the characters in the chapter
     entities: list of the key words in the chapter
-    book_id: (int) the book identifier
+    book_id: (str) the book identifier
     chapter: (int) the chapter number
     """
     sorted_characters = sorted(
         characters.items(), key=operator.itemgetter(1), reverse=True)
     sorted_entities = sorted(
         entities.items(), key=operator.itemgetter(1), reverse=True)
-    with open('../results/summaries/' + str(book_id) + '.csv', 'a') as csvFile:
+    with open('../results/summaries/' + book_id + '.csv', 'a') as csvFile:
         writer = csv.writer(csvFile)
         writer.writerows([['Chapter ' + str(chapter)]])
         writer.writerows(sorted_characters)

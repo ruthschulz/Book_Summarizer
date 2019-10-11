@@ -25,7 +25,7 @@ def summarize_book(book_id, num_chapters, args):
     Summarize the book using the features specified in the command line arguments.
     
     Parameters:
-    book_id: (int) the book identifier
+    book_id: (str) the book identifier
     num_chapters: the number of chapters the book has been divided into
     args: the command line arguments provided
     
@@ -139,7 +139,7 @@ def analyze_summaries(book_id, args):
     Expects the ground truth summary to be in the data/summaries directory.
 
     Parameters:
-    book_id: (int) the book identifier
+    book_id: (str) the book identifier
     args: the command line arguments, used to determine the filename for the created summary.
 
     Outputs:
@@ -170,9 +170,10 @@ def main():
     The user specifies which elements to include in the summary.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b', type=int, default=-1,
+    parser.add_argument('-b', nargs=1, default="",
                         help='create a summary of a given book text file, ' \
-                        'indicated by number, if not included, all books ' \
+                        'indicated by the name of the book txt file, ' \
+                        'located in data/raw_books, if -b is not used, all books ' \
                         'in data/raw_books will be summarized')
     parser.add_argument(
         "-en", help="include an entity summary of each chapter", action="store_true")
@@ -198,7 +199,7 @@ def main():
         "-w", help="write over the existing summary", action="store_true")
     args = parser.parse_args()
     # if -b is not given, all raw books in raw_books folder will be summarized
-    # otherwise argument following -b should be an integer book_id,
+    # otherwise argument following -b should be a string book_id,
     # where a book text file named book_id.txt is in the raw_books folder
     if args.ex not in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
         print("For extractive summary, specify a number of sentences between 1 and 9")
@@ -208,19 +209,20 @@ def main():
         return
     if not exists('../results'):
         makedirs('../results')
-    if (args.b == -1):
+    if (args.b == ""):
         book_files = [f for f in listdir(
             '../data/raw_books') if isfile(join('../data/raw_books', f))]
         for f in book_files:
-            book_id = int(f.strip('.txt'))
+            book_id = (f.strip('.txt'))
             # break down into chapters / segments, then summarize book
             book_id, num_chapters = process_book(book_id)
-            if (book_id != -1):
+            if (book_id != ""):
                 summarize_book(book_id, num_chapters, args)
     else:
+        book_id = args.b[0]
         # break down into chapters / segments, then summarize book
-        book_id, num_chapters = process_book(args.b)
-        if (book_id != -1):
+        book_id, num_chapters = process_book(book_id)
+        if (book_id != ""):
             summarize_book(book_id, num_chapters, args)
 
 

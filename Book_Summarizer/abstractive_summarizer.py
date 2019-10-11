@@ -207,7 +207,7 @@ def create_abstr_abstr_summary_chapter(book_id, chapter, small=True):
     Create an abstractive summary from an abstractive summary.
 
     Parameters:
-    book_id: number corresponding to the current book
+    book_id: (str) the book identifier
     chapter: the chapter to summarize
     small: how short to make the summary. small is 1 to 5 sentences, large is up to 20 sentences.
 
@@ -249,7 +249,7 @@ def create_abstr_extr_summary_chapter(book_id, chapter, technique):
     Create an abstractive summary from an extractive summary
 
     Parameters:
-    book_id: number corresponding to the current book
+    book_id: (str) the book identifier
     chapter: the chapter to summarize
 
     Returns:

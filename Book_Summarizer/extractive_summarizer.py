@@ -21,7 +21,7 @@ def find_relevant_quote(book_id, chapter, num_sentences=1, technique='luhn'):
     Create an extractive summary for a chapter of the book.
 
     Parameters:
-    book_id: is the project gutenberg identifier
+    book_id: (str) the book identifier
     chapter: is the chapter number to summarize
     num_sentences: how many sentences to extract
 
