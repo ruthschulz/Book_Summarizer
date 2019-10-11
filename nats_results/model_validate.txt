@@ -1,0 +1,2 @@
+../nats_results/decoder2proj_0_0.model 0 0 2.9709702 15.08064317703247
+

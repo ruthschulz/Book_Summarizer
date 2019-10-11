@@ -1,15 +1,15 @@
-# abstractive summarizer
-# create an abstractive summary from chapters of a large document
+"""
+This file has the functions for the abstractive summarizer
+Create an abstractive summary from chapters of a large document.
+"""
 
 import re
-import os
-import sys
-import shutil
-import spacy
-import pathlib
+from os import makedirs
+from os.path import exists
+from spacy import load
 from regex import Regex, UNICODE, IGNORECASE
-from extractive_summarizer import create_extractive_summary_book
-from data_download_and_stats import get_chapter_filename, get_extractive_summary_filename, get_abstractive_summary_filename
+from extractive_summarizer import find_relevant_quote
+from data import get_data_filename
 from nats.pointer_generator_network.model import *
 import argparse
 
@@ -19,116 +19,114 @@ NOPRESPACE_PUNCT = (r'^[\,\.\?\!\:\;\\\%\}\]\)]+$')
 FINAL_PUNCT = (r'([\.!?])([\'\"\)\]\p{Pf}\%])*$')
 
 
-def tokenize_book(input_data):
-    nlp = spacy.load('en_core_web_sm', disable=['tagger', 'ner'])
-    article = input_data
-    summary = 'summary'
-    title = 'title'
-    if article == None or summary == None or title == None:
-        return ''
-    article = nlp(article)
-    summary = nlp(summary)
-    title = nlp(title)
-    sen_arr = []
-    for sen in article.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    article = ' '.join(sen_arr)
-    sen_arr = []
-    for sen in summary.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        sen = ['<s>']+sen+['</s>']
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    summary = ' '.join(sen_arr)
-    sen_arr = []
-    for sen in title.sents:
-        sen = [k.text for k in sen if '\n' not in k.text]
-        sen = ['<s>']+sen+['</s>']
-        sen = ' '.join(sen)
-        sen_arr.append(sen)
-    title = ' '.join(sen_arr)
-    sen_arr = [title, summary, article]
-    return title + summary + '<sec>' + article
+def process_text_in(file_in, file_out):
+    """
+    Process text from plain text to the form expected by LeafNATS.
 
+    Parameters:
+    file_in: the filename of the plain text input file
+    file_out: the filename of the file to be used by LeafNATS
 
-def tokenize_file(file_in, file_out):
-    # book may also be extractive summary
-    book = open(file_in, 'rb')
+    Returns:
+    int: the number of segments the plain text has been broken up into
+    book_text: the full plain text input loaded from the file
+    """    
     book_text = ''
-    # remove special characters and make lower case
-    for line in book:
-        line = line.decode('utf-8').encode('ascii', 'ignore').decode('ascii')
-        book_text = book_text + ' ' + line.lower()
-    book.close()
+    with open(file_in, 'rb') as book:
+        # remove special characters and make lower case
+        for line in book:
+            line = line.decode('utf-8').encode('ascii',
+                                               'ignore').decode('ascii')
+            book_text = book_text + ' ' + line.lower()
     if len(book_text) > 1000000:
         book_text = book_text[:1000000]
-    # tokenize using spacy and add <s>, </s>, and <sec> tags
-    tokenized_book = tokenize_book(book_text)
-    processed_book = open(file_out, 'w')
-    processed_book.write(tokenized_book)
-    processed_book.close()
+    nlp = load('en_core_web_lg', disable=['tagger', 'ner'])
+    summary = 'summary'
+    title = 'title'
+    if book_text == None or summary == None or title == None:
+        return ''
+    # break down article into 400 token chunks
+    with open(file_out, 'w') as processed_book:
+        summary = nlp(summary)
+        sen_arr = []
+        for sen in summary.sents:
+            sen = [k.text for k in sen if '\n' not in k.text]
+            sen = ['<s>']+sen+['</s>']
+            sen = ' '.join(sen)
+            sen_arr.append(sen)
+        summary = ' '.join(sen_arr)
+        title = nlp(title)
+        sen_arr = []
+        for sen in title.sents:
+            sen = [k.text for k in sen if '\n' not in k.text]
+            sen = ['<s>']+sen+['</s>']
+            sen = ' '.join(sen)
+            sen_arr.append(sen)
+        title = ' '.join(sen_arr)
+        whole_article = nlp(book_text)
+        sen_arr = []
+        curr_len = 0
+        num_segments = 0
+        for sen in whole_article.sents:
+            sen = [k.text for k in sen if '\n' not in k.text]
+            curr_len += len(sen)
+            if curr_len > 200:
+                article = ' '.join(sen_arr)
+                processed_book.write(title + summary + '<sec>' + article)
+                processed_book.write('\n')
+                sen_arr = []
+                curr_len = 0
+                num_segments += 1
+            sen = ' '.join(sen)
+            sen_arr.append(sen)
+        article = ' '.join(sen_arr)
+        processed_book.write(title + summary + '<sec>' + article)
+        processed_book.write('\n')
+    return num_segments, book_text
 
 
-def tokenize_chapter_summaries(book_id):
-    if not os.path.exists('../results/abstractive_summaries'):
-        os.makedirs('../results/abstractive_summaries')
-    chapter = 0
-    extractive_summary_filename = get_extractive_summary_filename(
-        book_id, chapter)
-    abstractive_summary_filename = get_abstractive_summary_filename(
-        book_id, chapter)
-    book_abstractive_summary_filename = get_abstractive_summary_filename(
-        book_id)
-    path = pathlib.Path(extractive_summary_filename)
-    book_summary = open(book_abstractive_summary_filename, 'w')
-    while path.exists():
-        tokenize_file(extractive_summary_filename,
-                      abstractive_summary_filename)
-        chapter_summary = open(abstractive_summary_filename, 'r')
-        for l in chapter_summary:
-            book_summary.write(l)
-        book_summary.write('\n')
-        chapter_summary.close()
-        chapter += 1
-        extractive_summary_filename = get_extractive_summary_filename(
-            book_id, chapter)
-        abstractive_summary_filename = get_abstractive_summary_filename(
-            book_id, chapter)
-        path = pathlib.Path(extractive_summary_filename)
-    book_summary.close()
+def process_text_out(filename_in, filename_out):
+    """
+    Process text from LeafNATS to plain text.
+    This function removes the text features used by LeafNATS and makes this readable text.
 
+    Parameters:
+    filename_in: the filename of the text file to convert from LeafNATS output to text
+    filename_out: the filename of the text file to save the readable text.
 
-# adapted from:
-# https://github.com/ufal/mtmonkey/blob/master/worker/src/util/fileprocess.py
-def detokenize_summary(filename_in, filename_out):
-    file_in = open(filename_in, 'r')
-    file_out = open(filename_out, 'w')
-    lines = []
-    for line in file_in:
-        line = line.rstrip('\r\n')
-        line = line.replace('<s> summary </s>', '')
-        line = line.replace('<s> title </s>', '')
-        line = line.replace('<s>', '')
-        line = line.replace('</s>', '')
-        line = line.replace('<sec>', '\n')
-        line = line.replace('<stop>', '')
-        line = line.replace('<pad>', '')
-        line = detokenize_line(line)
-        file_out.write(line)
-        lines.append(line)
-    file_in.close()
-    file_out.close()
+    Returns:
+    list: a list of the lines of text output by LeafNATS
+    """
+    with open(filename_in, 'r') as file_in:
+        with open(filename_out, 'w') as file_out:
+            lines = []
+            for line in file_in:
+                line = line.rstrip('\r\n')
+                line = line.replace('<s> summary </s>', '')
+                line = line.replace('<s> title </s>', '')
+                line = line.replace('<s>', '')
+                line = line.replace('</s>', '')
+                line = line.replace('<sec>', '\n')
+                line = line.replace('<stop>', '')
+                line = line.replace('<pad>', '')
+                line = detokenize_line(line)
+                file_out.write(line)
+                lines.append(line)
     return lines
 
 
-# adapted from:
-# https://github.com/ufal/mtmonkey/blob/master/worker/src/util/detokenize.py
 def detokenize_line(line):
-    """\
-    Detokenize the given text using current settings.
     """
+    Detokenize the given text.
+    adapted from:
+    https://github.com/ufal/mtmonkey/blob/master/worker/src/util/detokenize.py
+
+    Parameters:
+    line: the line of text to detokenize
+
+    Returns:
+    str: the detokenized text
+    """    
     # split text
     words = line.split(' ')
     # paste text back, omitting spaces where needed
@@ -180,6 +178,9 @@ def detokenize_line(line):
                 and Regex(CONTRACTIONS).match(''.join(words[pos - 1:pos + 1])):
             text += word
             pre_spc = ' '
+        elif word == "n't":
+            text += word
+            pre_spc = ' '
         # keep spaces around normal words
         else:
             if capitalize_next:
@@ -192,7 +193,7 @@ def detokenize_line(line):
                 word = word.upper()
             text += pre_spc + word
             pre_spc = ' '
-        if Regex(FINAL_PUNCT).match(word):
+        if Regex(FINAL_PUNCT).match(word) and (text_len_last_final_punct == 0):
             capitalize_next = True
             text_len_last_final_punct = len(text)
     # strip leading/trailing space
@@ -201,17 +202,79 @@ def detokenize_line(line):
     return text
 
 
-def create_abstractive_summary_book(book_id):
-    # create extractive summaries for chapters
-    create_extractive_summary_book(book_id, 5)
-    # process extractive summaries into test.txt for input to abstractive summarizer
-    # (lower case, remove special characters, tokenize)
-    tokenize_chapter_summaries(book_id)
-    # run abstractive summarizer
-    if not os.path.exists('../sum_data'):
-        os.makedirs('../sum_data')
-    shutil.copyfile(get_abstractive_summary_filename(
-        book_id), '../sum_data/test.txt')
+def create_abstr_abstr_summary_chapter(book_id, chapter, small=True):
+    """
+    Create an abstractive summary from an abstractive summary.
+
+    Parameters:
+    book_id: (str) the book identifier
+    chapter: the chapter to summarize
+    small: how short to make the summary. small is 1 to 5 sentences, large is up to 20 sentences.
+
+    Returns:
+    list: the sentences of the abstractive summary
+    """
+    if not exists('../sum_data'):
+        makedirs('../sum_data')
+    num_segments, book_text = process_text_in(get_data_filename(
+        book_id, 'book_chapters', chapter), '../sum_data/test.txt')
+    if num_segments > 1:
+        call_abstractive_summarizer()
+        abstractive_sentences = process_text_out('../nats_results/summaries.txt',
+                                                 'tmp.txt')
+    else:
+        # so short a section, can just copy across existing text
+        abstractive_sentences = book_text.replace('\n', '').strip()
+        abstractive_sentences = abstractive_sentences[0].upper(
+        ) + abstractive_sentences[1:]
+    level = 0
+    thresh = 5 if small else 20
+    while num_segments > thresh and level < 4:
+        num_segments, book_text = process_text_in(
+            'tmp.txt', '../sum_data/test.txt')
+        if num_segments > 1:
+            call_abstractive_summarizer()
+            abstractive_sentences = process_text_out(
+                '../nats_results/summaries.txt', 'tmp.txt')
+        else:
+            abstractive_sentences = book_text.replace('\n', '').strip()
+            abstractive_sentences = abstractive_sentences[0].upper(
+            ) + abstractive_sentences[1:]
+        level += 1
+    return abstractive_sentences
+
+
+def create_abstr_extr_summary_chapter(book_id, chapter, technique):
+    """
+    Create an abstractive summary from an extractive summary
+
+    Parameters:
+    book_id: (str) the book identifier
+    chapter: the chapter to summarize
+
+    Returns:
+    list: the sentences of the abstractive summary
+    """
+    if not exists('../sum_data'):
+        makedirs('../sum_data')
+    book_abstractive_summary_filename = '../sum_data/test.txt'
+    extractive_summary_filename = 'tmp_in.txt'
+    quote = find_relevant_quote(book_id, chapter, 5, technique)
+    with open(extractive_summary_filename, 'w') as extractive_summary:
+        for q in quote:
+            extractive_summary.write(str(q) + '\n')
+    num_segments = process_text_in(extractive_summary_filename,
+                                   book_abstractive_summary_filename)
+    call_abstractive_summarizer()
+    return(process_text_out('../nats_results/summaries.txt', 'tmp.txt'))
+
+
+def call_abstractive_summarizer():
+    """
+    Call LeafNATS to create an abstractive summary using the pointer generator model.
+    Expects a file formatted with 
+    Output is saved in ../nats_results/summaries.txt
+    """
     parser = argparse.ArgumentParser()
     '''
     Use in the framework and cannot remove.
@@ -307,6 +370,3 @@ def create_abstractive_summary_book(book_id):
     args = parser.parse_args([])
     model = modelPointerGenerator(args)
     model.test()
-    # process abstractive summary summaries.txt into abstractive summary
-    # (detokenize)
-    return(detokenize_summary('../nats_results/summaries.txt', get_abstractive_summary_filename(book_id)))
