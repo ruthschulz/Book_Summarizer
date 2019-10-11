@@ -2,7 +2,7 @@
 
 ## A personalized book summarizer
 
-BooksDistilled is a natural language summarization tool that takes in the plain text of a very long document and outputs a variety of summaries using NLP tools and a neural text summarizer.
+BooksDistilled is a natural language summarization tool that takes in the plain text of a very long document and outputs a summary using NLP tools and a neural text summarizer. The summary can optionally include for each chapter: first lines, characters and key words, quotes, and an abstractive summary.
 
 The project was a consulting project completed as part of the [Insight AI program](https://www.insightdata.ai/) in Silicon Valley.
 [Tolstoy.ai](https://tolstoy.ai/) provided the inspiration and NLP advice.
@@ -52,7 +52,7 @@ python -m spacy download en_core_web_sm
 
 This project uses another repository for the abstractive summarizer module.
 The abstractive summarizer module is a forked version of the [LeafNATS](https://github.com/ruthschulz/LeafNATS) repository.
-Run these to copy the required folders of the LeafNATS repository into the appropriate place in the Book Summarizer repository.
+Run these to copy the required directories of the LeafNATS repository into the appropriate place in the Book Summarizer repository.
 ```
 git clone https://github.com/ruthschulz/LeafNATS
 mv LeafNATS/* Book_Summarizer
@@ -62,53 +62,80 @@ The [model](https://drive.google.com/file/d/1EuLYK3k-U65xMtazqYskt6A97ZLe2a-n/vi
 
 The [vocab](https://drive.google.com/file/d/1Kn14TMg0-ZLpnAUyJVhcuLXVWzZCD0Yg/view?usp=sharing) file also needs to be downloaded and extracted into the Book_Summarizer/sum_data directory.
 
-## Run Book Summarizer
-
-Place the text file of the book that you wish to summarize in the data/raw_books folder.
-The filename needs to be in the format book_id.txt where book_id comprises only numbers.
-E.g. 11.txt
-
-"Alice's Adventures in Wonderland" was downloaded from Project Gutenberg and has been included in this repository.
-
+Change directory to Book_Summarizer/Book_Summarizer and you are ready to summarize books.
 
 ```
 cd Book_Summarizer
+```
+
+## Run Book Summarizer
+
+Place the text file of the book that you wish to summarize in the data/raw_books directory.
+The filename needs to be in the format book_id.txt
+
+For example, 11.txt is the text of "Alice's Adventures in Wonderland" downloaded from Project Gutenberg and included in the data/raw_books directory.
+
+
+```
+usage: book_summarizer.py [-h] [-b B] [-en] [-ex [EX]]
+                          [-exTechnique [EXTECHNIQUE]] [-ae] [-aa [AA]] [-fl]
+                          [-analysis] [-w]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -b B                  create a summary of a given book text file, indicated
+                        by number, if not included, all books in
+                        data/raw_books will be summarized
+  -en                   include an entity summary of each chapter
+  -ex [EX]              include an extractive summary of each chapter,
+                        optionally choose how many sentences up to 9 (default
+                        is 1)
+  -exTechnique [EXTECHNIQUE]
+                        choose the technique for extractive summarization by
+                        name, options: luhn, lsa, lexrank, textrank, sumbasic,
+                        kl, reduction, random
+  -ae                   include an abstractive summary from an extractive
+                        summary of each chapter
+  -aa [AA]              include an abstractive summary from an abstractive
+                        summary of each chapter, optionally choose short (s)
+                        or long (l) summary (default is short)
+  -fl                   include the first lines of each chapter
+  -analysis             analyze the summary
+  -w                    write over the existing summary
+```
+
+### Examples
+
+To create a summary for a book with filename 11.txt including the first lines, and to write over an existing summary, the command would be:
+
+```
 python book_summarizer.py -b 11 -fl -w
 ```
 
-The options for use with book_summarizer.py are:
+This will save a summary called 11-fl.txt in the results/summaries directory.
 
--b This is followed by a book_id for a specific book to be summarized, if not included all books in the data/books directory will be summarized.
-
--fl The first lines of each chapter will be added to the summary.
-
--en The entities (characters and key words) for each chapter will be added to the summary.
-
--ex The extractive summary (informative sentences) for each chapter will be added to the summary. The default is one sentences. This option can be followed by a number up to 9 to specify how many informative sentences to include per chapter.
-
--ae The abstractive summary of the extractive summary of each chapter will be added to the summary.
-
--aa The abstractive summary of the abstractive summary of each chapter will be added to the summary. This option can be followed by l to indicate that a long abstractive summary (between 5 and 20 sentences) should be included. The default is a short abstractive summary (between 1 and 4 sentences).
-
--w This indicates that if a summary already exists, it should be written over.
-
-For example, to create a summary for a book with filename 11.txt including the first lines, entities, extractive summary, and abstractive summary of abstractive summary, and to write over an existing summary, the command would be:
+To create a summary for a book with filename 11.txt including the first lines, entities, extractive summary, and abstractive summary of abstractive summary, and to write over an existing summary, the command would be:
 ```
 python book_summarizer.py -b 11 -fl -en -ex -aa -w
 ```
 
 This will save a summary called 11-fl-en-ex-aa.txt as well as an entities csv file called 11-en.csv in the results/summaries directory.
 
+It is also possible to analyze the created summaries, comparing them to a ground truth summary in the data/summaries directory.
 
-It is also possible to analyze the created summaries, comparing them to a ground truth summary in the data/summaries folder. Currently this is ex:
 ```
 python book_summarizer.py -b 11 -aa -analysis
 ```
 
-The program will then save a summary of the book in the appropriate results folder.
+This would save 11.csv in the results/analysis directory with the word embedding similarity and cosine similarity between the created and ground truth summary.
+
+### Data
 
 You can use your own book and summary files, or you can download matched books from [Project Gutenberg](http://www.gutenberg.org/wiki/Main_Page) and summaries from the [CMU Book Summary Dataset](http://www.cs.cmu.edu/~dbamman/booksummaries.html) using data.py:
+
 ```
 python data.py
 ```
+
+If you use your own book files, they should be plain text files and should be placed in the data/raw_books directory.
 
