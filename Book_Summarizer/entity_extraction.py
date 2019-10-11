@@ -1,4 +1,7 @@
-# entity extraction
+"""
+This file has the functions for the entity extracter.
+Create an entity summary from chapters of a large document.
+"""
 
 from spacy import load
 from fuzzywuzzy import fuzz
@@ -12,6 +15,15 @@ entity_types = ["PERSON", "NORP", "FAC", "ORG", "GPE", "LOC", "PRODUCT",
 
 
 def consolidate_list(long_list):
+    """
+    Consolidate a long list by matching similar items.
+
+    Parameters:
+    long_list: a list of characters or key items
+
+    Returns:
+    list: a consolidated list where similar items are combined
+    """
     sorted_long_list = sorted(
         long_list.items(), key=operator.itemgetter(1), reverse=True)
     matched_list = dict()
@@ -26,6 +38,16 @@ def consolidate_list(long_list):
 
 
 def find_matching_item(item_list, new_item):
+    """
+    Find matching items according to similarity of the text string
+
+    Parameters:
+    item_list: a list of items
+    new_item: a potential new item to add to the list
+
+    Returns:
+    int: the index when the new_item is a match to an item in the item_list
+    """
     match_found = ''
     match = 0
     for existing_item in item_list:
@@ -35,6 +57,16 @@ def find_matching_item(item_list, new_item):
 
 
 def remove_characters_from_entities(characters, entities):
+    """
+    Consolidate character and entities found by removing characters from entities.
+
+    Parameters:
+    characters: list of the characters found
+    entities: list of the entities found    
+
+    Returns: 
+    updated characters and entities lists
+    """
     for character in characters:
         if character in entities:
             characters[character] = characters[character] + entities[character]
@@ -43,7 +75,21 @@ def remove_characters_from_entities(characters, entities):
 
 
 def find_entities_book(book_id):
-    filename = get_data_filename(book_id,'books')
+    """
+    Use spacy to find the entities in the book.
+
+    Separates entities found by spacy into characters and key words.
+    Performs some formatting on the entities found to remove returns and whitespace.
+    Consolidates lists so that similar entities are joined into one entity.
+
+    Parameters:
+    book_id: (int) the book identifier
+
+    Returns:
+    list: characters
+    list: key words
+    """
+    filename = get_data_filename(book_id, 'books')
     try:
         nlp = load('en_core_web_lg')
     except:
@@ -85,6 +131,19 @@ def find_entities_book(book_id):
 
 
 def find_entities_chapter(book_id, chapter, book_characters, book_entities):
+    """
+    Find the entities for a chapter, matching the entities to the book entities.
+
+    Parameters:
+    book_id: (int) the book identifier
+    chapter: the chapter to find the entities in
+    book_characters: the characters that were found in the whole book
+    book_entities: the key words that were found in the whole book
+
+    Returns:
+    list: characters
+    list: key words
+    """
     filename = get_data_filename(book_id, 'book_chapters', chapter)
     try:
         nlp = load('en_core_web_lg')
@@ -112,7 +171,18 @@ def find_entities_chapter(book_id, chapter, book_characters, book_entities):
     return characters, key_entities
 
 
-def create_sentence(entities, about_book=True, about_characters=True, chapter=-1):
+def create_sentence(entities, about_book=True, about_characters=True):
+    """
+    Create a sentence for the entity summary.
+
+    Parameters:
+    entities: the entities to list in the sentence
+    about_book: if the sentence is about a book, include up to 10 entities, otherwise 5 entities
+    about_characters: if the entities are characters, otherwise key terms
+
+    Returns:
+    str: the created sentences
+    """
     sentence = ''
     if (len(entities) > 0):
         sentence = "Characters: " if about_characters else "Key terms: "
@@ -127,6 +197,14 @@ def create_sentence(entities, about_book=True, about_characters=True, chapter=-1
 
 
 def save_sorted_entities_book(characters, entities, book_id):
+    """
+    Saves the book entities in a csv file, begins the file.
+
+    Parameters:
+    characters: list of the characters in the book
+    entities: list of the key words in the book
+    book_id: (int) the book identifier
+    """
     sorted_characters = sorted(
         characters.items(), key=operator.itemgetter(1), reverse=True)
     sorted_entities = sorted(
@@ -138,6 +216,15 @@ def save_sorted_entities_book(characters, entities, book_id):
 
 
 def save_sorted_entities_chapter(characters, entities, book_id, chapter):
+    """
+    Saves the chapter entities in a csv file, appends to the existing file.
+
+    Parameters:
+    characters: list of the characters in the chapter
+    entities: list of the key words in the chapter
+    book_id: (int) the book identifier
+    chapter: (int) the chapter number
+    """
     sorted_characters = sorted(
         characters.items(), key=operator.itemgetter(1), reverse=True)
     sorted_entities = sorted(

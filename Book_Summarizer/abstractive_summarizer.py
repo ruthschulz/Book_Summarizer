@@ -1,5 +1,7 @@
-# abstractive summarizer
-# create an abstractive summary from chapters of a large document
+"""
+This file has the functions for the abstractive summarizer
+Create an abstractive summary from chapters of a large document.
+"""
 
 import re
 from os import makedirs
@@ -18,16 +20,27 @@ FINAL_PUNCT = (r'([\.!?])([\'\"\)\]\p{Pf}\%])*$')
 
 
 def process_text_in(file_in, file_out):
-    # text may be book or previous level abstractive summary
+    """
+    Process text from plain text to the form expected by LeafNATS.
+
+    Parameters:
+    file_in: the filename of the plain text input file
+    file_out: the filename of the file to be used by LeafNATS
+
+    Returns:
+    int: the number of segments the plain text has been broken up into
+    book_text: the full plain text input loaded from the file
+    """    
     book_text = ''
     with open(file_in, 'rb') as book:
         # remove special characters and make lower case
         for line in book:
-            line = line.decode('utf-8').encode('ascii', 'ignore').decode('ascii')
+            line = line.decode('utf-8').encode('ascii',
+                                               'ignore').decode('ascii')
             book_text = book_text + ' ' + line.lower()
     if len(book_text) > 1000000:
         book_text = book_text[:1000000]
-    nlp = load('en_core_web_sm', disable=['tagger', 'ner'])
+    nlp = load('en_core_web_lg', disable=['tagger', 'ner'])
     summary = 'summary'
     title = 'title'
     if book_text == None or summary == None or title == None:
@@ -72,9 +85,18 @@ def process_text_in(file_in, file_out):
     return num_segments, book_text
 
 
-# adapted from:
-# https://github.com/ufal/mtmonkey/blob/master/worker/src/util/fileprocess.py
 def process_text_out(filename_in, filename_out):
+    """
+    Process text from LeafNATS to plain text.
+    This function removes the text features used by LeafNATS and makes this readable text.
+
+    Parameters:
+    filename_in: the filename of the text file to convert from LeafNATS output to text
+    filename_out: the filename of the text file to save the readable text.
+
+    Returns:
+    list: a list of the lines of text output by LeafNATS
+    """
     with open(filename_in, 'r') as file_in:
         with open(filename_out, 'w') as file_out:
             lines = []
@@ -93,12 +115,18 @@ def process_text_out(filename_in, filename_out):
     return lines
 
 
-# adapted from:
-# https://github.com/ufal/mtmonkey/blob/master/worker/src/util/detokenize.py
 def detokenize_line(line):
-    """\
-    Detokenize the given text using current settings.
     """
+    Detokenize the given text.
+    adapted from:
+    https://github.com/ufal/mtmonkey/blob/master/worker/src/util/detokenize.py
+
+    Parameters:
+    line: the line of text to detokenize
+
+    Returns:
+    str: the detokenized text
+    """    
     # split text
     words = line.split(' ')
     # paste text back, omitting spaces where needed
@@ -174,33 +202,59 @@ def detokenize_line(line):
     return text
 
 
-def create_abstr_abstr_summary_chapter(book_id,chapter,small=True):
+def create_abstr_abstr_summary_chapter(book_id, chapter, small=True):
+    """
+    Create an abstractive summary from an abstractive summary.
+
+    Parameters:
+    book_id: number corresponding to the current book
+    chapter: the chapter to summarize
+    small: how short to make the summary. small is 1 to 5 sentences, large is up to 20 sentences.
+
+    Returns:
+    list: the sentences of the abstractive summary
+    """
     if not exists('../sum_data'):
         makedirs('../sum_data')
-    num_segments, book_text = process_text_in(get_data_filename(book_id, 'book_chapters', chapter), '../sum_data/test.txt')
+    num_segments, book_text = process_text_in(get_data_filename(
+        book_id, 'book_chapters', chapter), '../sum_data/test.txt')
     if num_segments > 1:
         call_abstractive_summarizer()
         abstractive_sentences = process_text_out('../nats_results/summaries.txt',
-                     'tmp.txt')
+                                                 'tmp.txt')
     else:
         # so short a section, can just copy across existing text
-        abstractive_sentences = book_text.replace('\n','').strip()
-        abstractive_sentences = abstractive_sentences[0].upper() + abstractive_sentences[1:]
+        abstractive_sentences = book_text.replace('\n', '').strip()
+        abstractive_sentences = abstractive_sentences[0].upper(
+        ) + abstractive_sentences[1:]
     level = 0
     thresh = 5 if small else 20
     while num_segments > thresh and level < 4:
-        num_segments, book_text = process_text_in('tmp.txt', '../sum_data/test.txt')
+        num_segments, book_text = process_text_in(
+            'tmp.txt', '../sum_data/test.txt')
         if num_segments > 1:
             call_abstractive_summarizer()
-            abstractive_sentences = process_text_out('../nats_results/summaries.txt','tmp.txt')
+            abstractive_sentences = process_text_out(
+                '../nats_results/summaries.txt', 'tmp.txt')
         else:
-            abstractive_sentences = book_text.replace('\n','').strip()
-            abstractive_sentences = abstractive_sentences[0].upper() + abstractive_sentences[1:]
+            abstractive_sentences = book_text.replace('\n', '').strip()
+            abstractive_sentences = abstractive_sentences[0].upper(
+            ) + abstractive_sentences[1:]
         level += 1
     return abstractive_sentences
 
 
 def create_abstr_extr_summary_chapter(book_id, chapter):
+    """
+    Create an abstractive summary from an extractive summary
+
+    Parameters:
+    book_id: number corresponding to the current book
+    chapter: the chapter to summarize
+
+    Returns:
+    list: the sentences of the abstractive summary
+    """
     if not exists('../sum_data'):
         makedirs('../sum_data')
     book_abstractive_summary_filename = '../sum_data/test.txt'
@@ -210,12 +264,17 @@ def create_abstr_extr_summary_chapter(book_id, chapter):
         for q in quote:
             extractive_summary.write(str(q) + '\n')
     num_segments = process_text_in(extractive_summary_filename,
-                  book_abstractive_summary_filename)
+                                   book_abstractive_summary_filename)
     call_abstractive_summarizer()
-    return(process_text_out('../nats_results/summaries.txt','tmp.txt'))
+    return(process_text_out('../nats_results/summaries.txt', 'tmp.txt'))
 
 
 def call_abstractive_summarizer():
+    """
+    Call LeafNATS to create an abstractive summary using the pointer generator model.
+    Expects a file formatted with 
+    Output is saved in ../nats_results/summaries.txt
+    """
     parser = argparse.ArgumentParser()
     '''
     Use in the framework and cannot remove.

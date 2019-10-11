@@ -1,5 +1,7 @@
-# extractive summarizer
-# create an extractive summary from chapters of a large document
+"""
+This file has the functions for the extractive summarizer.
+Create an extractive summary from chapters of a large document.
+"""
 
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
@@ -7,14 +9,18 @@ from sumy.summarizers.luhn import LuhnSummarizer
 from data import get_data_filename
 
 
-# create_extractive_summary_chapter(book_id, chapter, summarizer, size)
-#
-# create an extractive summary for a chapter of the book
-# book_id is the project gutenberg identifier
-# chapter is the chapter number to summarize
-# (refers to file break down, may not actually be that chapter in the book)
-# summarizer is the sumy summarizer that will create the summary
 def find_relevant_quote(book_id, chapter, num_sentences=1):
+    """
+    Create an extractive summary for a chapter of the book.
+
+    Parameters:
+    book_id: is the project gutenberg identifier
+    chapter: is the chapter number to summarize
+    num_sentences: how many sentences to extract
+
+    Returns:
+    sentences: the extracted sentences
+    """
     chapter_filename = get_data_filename(book_id, 'book_chapters', chapter)
     parser = PlaintextParser.from_file(chapter_filename, Tokenizer("english"))
     summarizer = LuhnSummarizer()

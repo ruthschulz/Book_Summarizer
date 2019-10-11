@@ -1,3 +1,7 @@
+"""
+This file has the functions for loading and handling the data.
+"""
+
 import pandas as pd
 import wget
 import shutil
@@ -9,8 +13,9 @@ from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 
 
-def get_text_filename(book_id,chapter_num=-1):
-    if chapter_num!=-1:
+def get_text_filename(book_id, chapter_num=-1):
+    """ Get the filename for a text document with the book identifier and chapter number. """
+    if chapter_num != -1:
         filename = str(book_id) + '-' + str(chapter_num) + '.txt'
     else:
         filename = str(book_id) + ".txt"
@@ -18,44 +23,57 @@ def get_text_filename(book_id,chapter_num=-1):
 
 
 def get_zip_filename(book_id):
+    """ Get the filename for a zip document with the book identifier. """
     return str(book_id) + ".zip"
 
 
 def get_data_filename(book_id, foldername, chapter_num=-1):
-    return '../data/' + foldername + '/' + get_text_filename(book_id,chapter_num)
+    """ 
+    Get the filename for a data file with the book identifier and chapter number in foldername. 
+    """
+    return '../data/' + foldername + '/' + get_text_filename(book_id, chapter_num)
 
 
 def get_summary_extension(args):
+    """ Get the tags to include in the filename for the created summary. """
     ext = ''
-    if args.fl and args.en and (args.ex!='0') and args.ae and (args.aa!='n'):
+    if args.fl and args.en and (args.ex != '0') and args.ae and (args.aa != 'n'):
         ext = '-all'
     else:
         if args.fl:
             ext = ext + '-fl'
         if args.en:
             ext = ext + '-en'
-        if args.ex!='0':
+        if args.ex != '0':
             ext = ext + '-ex'
         if args.ae:
             ext = ext + '-ae'
-        if args.aa!='n':
+        if args.aa != 'n':
             ext = ext + '-aa'
     return ext
 
 
 def get_results_filename(book_id, args):
+    """ 
+    Get the filename for a results file with the book identifier and tags specified in args. 
+    """
     return '../results/summaries/' + str(book_id) + get_summary_extension(args) + '.txt'
 
 
 def get_analysis_filename(book_id, args):
+    """ Get the filename for the analysis csv file. """
     return '../results/analysis/' + str(book_id) + get_summary_extension(args) + '.csv'
 
 
-# calculate_data_stats(book_filename,summary_filename)
-#
-# calculates number of sentences, number of words, file size
-# for books and summaries
 def calculate_data_stats(book_filename, summary_filename):
+    """
+    Calculates statistics of the book and summary.
+    Calculates the number of sentences, number of words, and file size for book and summary.
+
+    Parameters:
+    book_filename: the filename for the book
+    summary_filename: the filename for the summary
+    """
     parser = PlaintextParser.from_file(book_filename, Tokenizer("english"))
     num_sentences_in_book = len(parser.document.sentences)
     num_words_in_book = len(parser.document.words)
@@ -70,16 +88,23 @@ def calculate_data_stats(book_filename, summary_filename):
             num_sentences_in_summary, num_words_in_summary, file_size_summary]
 
 
-# data_list()
-#
-# load book summaries
-# load metadata about Project Gutenberg books
-# match summaries and books on title
-# return list of matched books and summaries
-# also saves this list to file
-# also return list of titles and summaries
 def data_list():
-    # otherwise the summaries are cropped
+    """
+    Matches books in Project Gutenberg with summaries from the CMU dataset.
+
+    Expects a file ../data/SPGC-metadata-2018-07-18.csv with information about the books
+    available in Projet Gutenberg.
+    This file is available at:
+    Expects a file ../data/booksummaries.txt
+    This file is available at:
+
+    Returns:
+    dataframe of matched titles and summaries
+
+    Outputs:
+    List of matched titles saved to matched_titles.csv
+    """
+# otherwise the summaries are cropped
     pd.set_option("display.max_colwidth", 100000)
     df = pd.read_csv("../data/booksummaries.txt", sep='\t', header=None)
     df[2] = df[2].map(lambda x: x.lower())
@@ -96,66 +121,57 @@ def data_list():
     return df_titles, df_summaries
 
 
-# calculate_author_match(author1,author2)
-#
-# calculates the match between author names
-# returns a value between 0 and 100
-# 0 indicates no match, 100 indicates perfect match
-# with different orders of names and extra information about 40 is a good threshold
-# assumption made that if no author is provided there is a match
 def calculate_author_match(author1, author2):
+    """ Calculate whether author1 is a match to author2 (0=no match, 100=perfect match) """
     if isinstance(author1, str) and isinstance(author2, str):
         return fuzz.partial_ratio(author1, author2)
     else:
         return 100
 
 
-# download_from_gutenberg(pg_id)
-#
-# downloads the book zip file from Project Gutenberg into the current directory
-# some of the links do not work
-# for PGabcde, the address is http://aleph.gutenberg.org/a/b/c/d/abcde/abcde.zip
 def download_from_gutenberg(pg_id):
+    """
+    Downloads the book zip file identified by pg_id from Project Gutenberg
+    into the current directory.
+    """
     web_page = "http://aleph.gutenberg.org/"
     for d in str(pg_id)[:-1]:
         web_page = web_page + str(d) + "/"
     web_page = web_page + str(pg_id) + "/" + str(pg_id) + ".zip"
     file_exists = True
     try:
-        wget.download(web_page, 'tmp/' +str(pg_id) + '.zip')
+        wget.download(web_page, 'tmp/' + str(pg_id) + '.zip')
     except:
         file_exists = False
     return file_exists
 
 
-# extract_book(pg_index)
-#
-# unzip the book and move to books folder
-# remove zip file afterwards
 def extract_book(pg_index, zip_filename='', text_filename='', book_filename=''):
+    """
+    Unzip the book file downloaded from Project Gutenberg and move to books folder.
+    """
     if not os.path.exists('../data/raw_books'):
         os.makedirs('../data/raw_books')
-    if len(zip_filename)==0:
+    if len(zip_filename) == 0:
         zip_filename = 'tmp/' + get_zip_filename(pg_index)
-    if len(text_filename)==0:
+    if len(text_filename) == 0:
         text_filename = get_text_filename(pg_index)
-    if len(book_filename)==0:
-        book_filename = get_data_filename(pg_index,'raw_books')
+    if len(book_filename) == 0:
+        book_filename = get_data_filename(pg_index, 'raw_books')
     with ZipFile(zip_filename, 'r') as zipObj:
         zipObj.extractall('tmp')
     if os.path.exists('tmp/' + text_filename):
         shutil.move('tmp/' + text_filename, book_filename)
     else:
         # some files have an extra folder before the file
-        shutil.move('tmp/' + str(pg_index) + '/' + text_filename, book_filename)
+        shutil.move('tmp/' + str(pg_index) + '/' +
+                    text_filename, book_filename)
         shutil.rmtree('tmp/' + str(pg_index))
     os.remove(zip_filename)
 
 
-# save_summary(df_summaries, new_title, summary_filename)
-#
-# saves the summary to the summary folder
 def save_summary(df_summaries, new_title, summary_filename):
+    """ Saves the summary to the summary folder. """
     if not os.path.exists('../data/summaries'):
         os.makedirs('../data/summaries')
     new_summary = df_summaries[df_summaries[2] == new_title][6].to_string()[6:]
@@ -163,16 +179,22 @@ def save_summary(df_summaries, new_title, summary_filename):
         f.write(new_summary)
 
 
-# save_clean_book(pg_index)
-#
-# removes information about project gutenberg from the book
-# replaces the book file with the cleaned book
 def save_clean_book(pg_index):
+    """
+    Saves a clean version of the book to the ../data/books directory.
+    Removes the Project Gutenberg license and book information where possible.
+    
+    Parameters:
+    pg_index: the project gutenberg book index
+    
+    Outputs:
+    Saves the clean book.
+    """
     if not os.path.exists('../data/books'):
         os.makedirs('../data/books')
     text_filename = get_text_filename(pg_index)
-    book_filename = get_data_filename(pg_index,'raw_books')
-    clean_book_filename = get_data_filename(pg_index,'books')
+    book_filename = get_data_filename(pg_index, 'raw_books')
+    clean_book_filename = get_data_filename(pg_index, 'books')
     with open(book_filename, 'r', encoding='latin-1') as book:
         with open(clean_book_filename, 'w') as clean_book:
             write_lines = False
@@ -192,19 +214,23 @@ def save_clean_book(pg_index):
                     clean_book.write(l)
 
 
-# divide_book_into_chapters(book_id)
-#
-# divides the book file into separate chapter files
-# book file is in the data/books folder
-# chapter files are saved in the data/book_chapters folder
-# assumes chapter breaks occur when there are two empty lines in a row
-# makes chapters at least 20 lines long
-# as there are often two double spaces at the start of a chapter
-# limits chapters to the end of the next paragraph after 3000 lines
 def divide_book_into_chapters(book_id):
+    """
+    Divides the book file into separate chapter files.
+    Assumes chapter breaks occur when there are two empty lines in a row
+    Makes chapters at least 20 lines long as there are often two double spaces 
+    at the start of a chapter
+    Limits chapters to the end of the next paragraph after 3000 lines
+
+    Parameters:
+    book_id: (int) the book identifier
+    
+    Outputs:
+    The chapter files are saved in the data/book_chapters folder.
+    """
     if not os.path.exists('../data/book_chapters'):
         os.makedirs('../data/book_chapters')
-    book_filename = get_data_filename(book_id,'books')
+    book_filename = get_data_filename(book_id, 'books')
     count_chapters = 0
     count_lines_in_chapter = 0
     previous_blank_line = False
@@ -217,7 +243,8 @@ def divide_book_into_chapters(book_id):
                 lines.append(l)
             elif (len(l) == 1) and ((previous_blank_line == True) or (count_lines_in_chapter >= 3000)):
                 count_lines_in_chapter = 0
-                save_chapter(get_data_filename(book_id,'book_chapters',count_chapters),lines)
+                save_chapter(get_data_filename(
+                    book_id, 'book_chapters', count_chapters), lines)
                 count_chapters += 1
                 lines = []
             elif (len(l) == 1):
@@ -227,18 +254,23 @@ def divide_book_into_chapters(book_id):
             else:
                 count_lines_in_chapter += 1
                 lines.append(l)
-        save_chapter(get_data_filename(book_id,'book_chapters',count_chapters),lines)
+        save_chapter(get_data_filename(
+            book_id, 'book_chapters', count_chapters), lines)
         count_chapters += 1
     return count_chapters
 
 
 def save_chapter(filename, lines):
+    """ Saves chapter lines to filename. """
     with open(filename, 'w') as chapter:
         for l in lines:
             chapter.write(l)
 
 
 def create_book_dataset():
+    """
+    Create a matched book and summary data set from Project Gutenberg and the CMU dataset.
+    """
     # load info about books and summaries
     df_titles, df_summaries = data_list()
     # for each item, check if title is already in database
@@ -265,9 +297,9 @@ def create_book_dataset():
             if (file_exists):
                 zip_filename = 'tmp/' + get_zip_filename(pg_index)
                 text_filename = get_text_filename(pg_index)
-                book_filename = get_data_filename(pg_index,'raw_books')
-                clean_book_filename = get_data_filename(pg_index,'books')
-                summary_filename = get_data_filename(pg_index,'summaries')
+                book_filename = get_data_filename(pg_index, 'raw_books')
+                clean_book_filename = get_data_filename(pg_index, 'books')
+                summary_filename = get_data_filename(pg_index, 'summaries')
                 extract_book(pg_index, zip_filename,
                              text_filename, book_filename)
                 save_summary(df_summaries, new_title, summary_filename)
@@ -284,25 +316,45 @@ def create_book_dataset():
     shutil.rmtree('tmp')
 
 
-def first_lines_chapter(book_id,chapter_num):
+def first_lines_chapter(book_id, chapter_num):
+    """ 
+    Returns the first 2 lines of chapter chapter_num from book book_id. 
+
+    Parameters:
+    book_id: (int) the book identifier
+    chapter_num: (int) the chapter number
+
+    Returns:
+    the first two lines of the chapter followed by ... to indicate that the chapter continues
+    """
     lines = ''
-    with open(get_data_filename(book_id,'book_chapters',chapter_num), 'r') as book_chapter:
+    with open(get_data_filename(book_id, 'book_chapters', chapter_num), 'r') as book_chapter:
         num_lines = 0
         if book_chapter.readable():
             for l in book_chapter:
-                if len(l)>1:
+                if len(l) > 1:
                     lines = lines + l.strip('\n') + ' '
                     num_lines += 1
-                if (num_lines>=2):
+                if (num_lines >= 2):
                     break
     return (lines + '...\n')
 
 
 def process_book(book_id):
+    """ 
+    Processes the book book_id into a clean book and divides it into chapters. 
+
+    Parameters:
+    book_id: (int) the book identifier
+
+    Returns:
+    int book_id to confirm that the file has been successfully found
+    int num_chapters the number of chapters the book has been divided into
+    """
     num_chapters = 0
-    if not os.path.isfile(get_data_filename(book_id,'raw_books')):
-        book_id=-1
-    if book_id>=0:
+    if not os.path.isfile(get_data_filename(book_id, 'raw_books')):
+        book_id = -1
+    if book_id >= 0:
         save_clean_book(book_id)
         num_chapters = divide_book_into_chapters(book_id)
     return book_id, num_chapters

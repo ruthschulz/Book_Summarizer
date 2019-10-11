@@ -1,15 +1,7 @@
-# entry point for calling the book summarizer
-# command line interface
-# if no arguments given, all raw books in raw_books folder will be summarized
-# otherwise argument following book_summarizer.py should be -b book_id,
-# and a book text file named book_id.txt should be found in raw_books folder
-# no additional tag -> print all information
-# if any tags, print only information specified by tags
-# -fl for first line(s) - number specifies how many lines, default is one
-# -en for entities
-# -ex for extractive summary - number specifies how many sentences
-# -ae for abstractive from extractive summary
-# -aa for abstractive from abstractive summary
+"""
+This file is the entry point for calling the book summarizer
+Create a summary of the book with features defined with command line arguments. 
+"""
 
 from entity_extraction import find_entities_book, find_entities_chapter, create_sentence
 from entity_extraction import save_sorted_entities_book, save_sorted_entities_chapter
@@ -29,9 +21,20 @@ import argparse
 
 
 def summarize_book(book_id, num_chapters, args):
+    """
+    Summarize the book using the features specified in the command line arguments.
+    
+    Parameters:
+    book_id: (int) the book identifier
+    num_chapters: the number of chapters the book has been divided into
+    args: the command line arguments provided
+    
+    Outputs:
+    Saves the summary to file, with the name of the file determined by the arguments.
+    """
     if not exists('../results/summaries'):
         makedirs('../results/summaries')
-    summary_filename = get_results_filename(book_id,args)
+    summary_filename = get_results_filename(book_id, args)
     if isfile(summary_filename) and not args.w:
         return
     with open(summary_filename, 'w') as complete_summary:
@@ -66,18 +69,18 @@ def summarize_book(book_id, num_chapters, args):
                     chapter_characters, chapter_entities, book_id, chapter)
                 # Print sentence for characters and key words from chapter
                 line = create_sentence(
-                    chapter_characters, about_book=False, about_characters=True, chapter=chapter)
+                    chapter_characters, about_book=False, about_characters=True)
                 if (len(line) > 0):
                     complete_summary.write(line + '\n')
                 line = create_sentence(
-                    chapter_entities, about_book=False, about_characters=False, chapter=chapter)
+                    chapter_entities, about_book=False, about_characters=False)
                 if (len(line) > 0):
                     complete_summary.write(line + '\n')
-            if int(args.ex)!=0:
+            if int(args.ex) != 0:
                 # find quote using extractive summary techniques
                 quote = find_relevant_quote(book_id, chapter, int(args.ex))
                 # Print quote from chapter
-                if len(quote)==1:
+                if len(quote) == 1:
                     complete_summary.write('Quote: ')
                 else:
                     complete_summary.write('Quotes:\n')
@@ -86,11 +89,13 @@ def summarize_book(book_id, num_chapters, args):
                     complete_summary.write(line + '\n')
             if args.ae:
                 # Print abstractive summary for chapter
-                abstr_extr_summary = create_abstr_extr_summary_chapter(book_id,chapter)
+                abstr_extr_summary = create_abstr_extr_summary_chapter(
+                    book_id, chapter)
                 for line in abstr_extr_summary:
                     complete_summary.write(line)
-            if args.aa!='n':
-                abstr_abstr_summary = create_abstr_abstr_summary_chapter(book_id,chapter,args.aa=='s')
+            if args.aa != 'n':
+                abstr_abstr_summary = create_abstr_abstr_summary_chapter(
+                    book_id, chapter, args.aa == 's')
                 for line in abstr_abstr_summary:
                     complete_summary.write(line)
             complete_summary.write('\n')
@@ -99,6 +104,15 @@ def summarize_book(book_id, num_chapters, args):
 
 
 def load_summary(filename):
+    """
+    Load the summary for analysis.
+    
+    Parameters:
+    filename: the filename of the summary text file
+    
+    Returns:
+    Spacy processed text and sumy processed text for analysis.
+    """
     spacy_available = True
     try:
         nlp = load('en_core_web_lg')
@@ -107,37 +121,57 @@ def load_summary(filename):
     if not isfile(filename):
         return '', '', ''
     if spacy_available:
-        with open(filename,'r') as summary_file:
+        with open(filename, 'r') as summary_file:
             summary_text = ' '.join(summary_file)
             summary_doc = nlp(summary_text)
     else:
         summary_doc = ''
     summary_parser = PlaintextParser.from_file(
         filename, Tokenizer("english"))
-    summary_model = TfDocumentModel(str(summary_parser.document.sentences), Tokenizer("en"))
+    summary_model = TfDocumentModel(
+        str(summary_parser.document.sentences), Tokenizer("en"))
     return summary_doc, summary_model
 
 
 def analyze_summaries(book_id, args):
+    """
+    Analyze the summary.
+    Compares the created summary with the ground truth summary.
+    Expects the ground truth summary to be in the data/summaries directory.
+
+    Parameters:
+    book_id: (int) the book identifier
+    args: the command line arguments, used to determine the filename for the created summary.
+
+    Outputs:
+    Saves the analysis to a csv file in the results/analysis directory
+    """
     if not exists('../results/analysis'):
         makedirs('../results/analysis')
     analysis_data = []
     summary_doc, summary_model = load_summary(
-        get_data_filename(book_id,'summaries'))
+        get_data_filename(book_id, 'summaries'))
     new_summary_doc, new_summary_model = load_summary(
-        get_results_filename(book_id,args))
+        get_results_filename(book_id, args))
     if summary_doc != '':
         if new_summary_doc != '':
-            analysis_data.append(['word embeddings similarity', summary_doc.similarity(new_summary_doc)])
+            analysis_data.append(
+                ['word embeddings similarity', summary_doc.similarity(new_summary_doc)])
     if summary_model != '':
         if new_summary_model != '':
-            analysis_data.append(['cosine similarity', cosine_similarity(summary_model, new_summary_model)])
-    with open(get_analysis_filename(book_id,args), 'w') as csvFile:
+            analysis_data.append(
+                ['cosine similarity', cosine_similarity(summary_model, new_summary_model)])
+    with open(get_analysis_filename(book_id, args), 'w') as csvFile:
         writer = csv.writer(csvFile)
         writer.writerows(analysis_data)
 
 
 def main():
+    """
+    Command line interface for the book summarizer
+
+    The user specifies which elements to include in the summary.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', type=int, default=-1,
                         help='create a summary of a given book text file, indicated by number')
@@ -159,10 +193,10 @@ def main():
     # if -b is not given, all raw books in raw_books folder will be summarized
     # otherwise argument following -b should be an integer book_id,
     # where a book text file named book_id.txt is in the raw_books folder
-    if args.ex not in ['0','1','2','3','4','5','6','7','8','9']:
+    if args.ex not in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
         print("For extractive summary, specify a number of sentences between 1 and 9")
         return
-    if args.aa not in ['l','s','n']:
+    if args.aa not in ['l', 's', 'n']:
         print("For abstractive from abstractive summary, specify l for long or s for short")
         return
     if not exists('../results'):
