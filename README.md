@@ -77,12 +77,19 @@ python book_summarizer.py -b 11 -fl -w
 ```
 
 The options for use with book_summarizer.py are:
+
 -b This is followed by a book_id for a specific book to be summarized, if not included all books in the data/books directory will be summarized.
+
 -fl The first lines of each chapter will be added to the summary.
+
 -en The entities (characters and key words) for each chapter will be added to the summary.
+
 -ex The extractive summary (informative sentences) for each chapter will be added to the summary. The default is one sentences. This option can be followed by a number up to 9 to specify how many informative sentences to include per chapter.
+
 -ae The abstractive summary of the extractive summary of each chapter will be added to the summary.
+
 -aa The abstractive summary of the abstractive summary of each chapter will be added to the summary. This option can be followed by l to indicate that a long abstractive summary (between 5 and 20 sentences) should be included. The default is a short abstractive summary (between 1 and 4 sentences).
+
 -w This indicates that if a summary already exists, it should be written over.
 
 For example, to create a summary for a book with filename 11.txt including the first lines, entities, extractive summary, and abstractive summary of abstractive summary, and to write over an existing summary, the command would be:
