@@ -5,9 +5,7 @@ wget
 sumy
 fuzzywuzzy
 pandas
-shutil
-os
-zipfile
 spacy
 pyrouge
 python-Levenshtein
+torch
