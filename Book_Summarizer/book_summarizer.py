@@ -77,7 +77,7 @@ def summarize_book(book_id, num_chapters, args):
                         complete_summary.write(line + '\n')
                 if int(args.ex) != 0:
                     # find quote using extractive summary techniques
-                    quote = find_relevant_quote(book_id, chapter, int(args.ex))
+                    quote = find_relevant_quote(book_id, chapter, int(args.ex), args.exTechnique)
                     # Print quote from chapter
                     if len(quote) == 1:
                         complete_summary.write('Quote: ')
@@ -89,7 +89,7 @@ def summarize_book(book_id, num_chapters, args):
                 if args.ae:
                     # Print abstractive summary for chapter
                     abstr_extr_summary = create_abstr_extr_summary_chapter(
-                        book_id, chapter)
+                        book_id, chapter, args.exTechnique)
                     for line in abstr_extr_summary:
                         complete_summary.write(line)
                 if args.aa != 'n':
@@ -171,21 +171,31 @@ def main():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', type=int, default=-1,
-                        help='create a summary of a given book text file, indicated by number')
+                        help='create a summary of a given book text file, ' \
+                        'indicated by number, if not included, all books ' \
+                        'in data/raw_books will be summarized')
     parser.add_argument(
         "-en", help="include an entity summary of each chapter", action="store_true")
     parser.add_argument(
-        "-ex", help="include an extractive summary of each chapter", nargs='?', const='1', default='0')
+        "-ex", help="include an extractive summary of each chapter, " \
+        "optionally choose how many sentences up to 9 (default is 1)", 
+        nargs='?', const='1', default='0')
     parser.add_argument(
-        "-ae", help="include an abstractive summary of each chapter", action="store_true")
+        "-exTechnique", help="choose the technique for extractive summarization by name," \
+        " options: luhn, lsa, lexrank, textrank, sumbasic, kl, reduction, random", nargs='?', const='luhn', default='luhn')
     parser.add_argument(
-        "-aa", help="include an abstractive summary of each chapter", nargs='?', const='s', default='n')
+        "-ae", help="include an abstractive summary from an extractive summary" \
+        " of each chapter", action="store_true")
+    parser.add_argument(
+        "-aa", help="include an abstractive summary from an abstractive summary" \
+        " of each chapter, optionally choose short (s) or long (l) summary" \
+        " (default is short)", nargs='?', const='s', default='n')
     parser.add_argument(
         "-fl", help="include the first lines of each chapter", action="store_true")
     parser.add_argument(
-        "-analysis", help="analyze all summaries", action="store_true")
+        "-analysis", help="analyze the summary", action="store_true")
     parser.add_argument(
-        "-w", help="write over existing summaries", action="store_true")
+        "-w", help="write over the existing summary", action="store_true")
     args = parser.parse_args()
     # if -b is not given, all raw books in raw_books folder will be summarized
     # otherwise argument following -b should be an integer book_id,

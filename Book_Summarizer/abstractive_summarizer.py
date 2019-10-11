@@ -244,7 +244,7 @@ def create_abstr_abstr_summary_chapter(book_id, chapter, small=True):
     return abstractive_sentences
 
 
-def create_abstr_extr_summary_chapter(book_id, chapter):
+def create_abstr_extr_summary_chapter(book_id, chapter, technique):
     """
     Create an abstractive summary from an extractive summary
 
@@ -259,7 +259,7 @@ def create_abstr_extr_summary_chapter(book_id, chapter):
         makedirs('../sum_data')
     book_abstractive_summary_filename = '../sum_data/test.txt'
     extractive_summary_filename = 'tmp_in.txt'
-    quote = find_relevant_quote(book_id, chapter, 5)
+    quote = find_relevant_quote(book_id, chapter, 5, technique)
     with open(extractive_summary_filename, 'w') as extractive_summary:
         for q in quote:
             extractive_summary.write(str(q) + '\n')
