@@ -12,8 +12,8 @@ The project was a consulting project completed as part of the [Insight AI progra
 ## Project contents:
 - **Book_Summarizer** : All source code
 - **data** : Sample data 
-- **nats_results** : Model
-- **notebooks** : Example setup and run
+- **examples** : Example setup and run
+- **nats_results** : Folder for model
 - **results** : Sample results 
 
 ## Setup Environment
@@ -58,9 +58,9 @@ git clone https://github.com/ruthschulz/LeafNATS
 mv LeafNATS/* Book_Summarizer
 ```
 
-The [model](https://drive.google.com/file/d/1EuLYK3k-U65xMtazqYskt6A97ZLe2a-n/view?usp=sharing) also needs to be downloaded and extracted into the Book_Summarizer/nats_results directory.
+The [model](https://drive.google.com/file/d/1mL8l2p7YMPVlV5bhzsOMxYx3NXwdkqNG/view?usp=sharing) also needs to be downloaded and extracted into the Book_Summarizer/nats_results directory.
 
-The [vocab](https://drive.google.com/file/d/1Kn14TMg0-ZLpnAUyJVhcuLXVWzZCD0Yg/view?usp=sharing) file also needs to be downloaded and extracted into the Book_Summarizer/sum_data directory.
+The [vocab](https://drive.google.com/file/d/1Kn14TMg0-ZLpnAUyJVhcuLXVWzZCD0Yg/view?usp=sharing) file also needs to be downloaded into the Book_Summarizer/sum_data directory.
 
 Change directory to Book_Summarizer/Book_Summarizer and you are ready to summarize books.
 
@@ -74,6 +74,8 @@ Place the text file of the book that you wish to summarize in the data/raw_books
 The filename needs to be in the format book_id.txt
 
 For example, 11.txt is the text of "Alice's Adventures in Wonderland" downloaded from Project Gutenberg and included in the data/raw_books directory.
+
+Note that the system assumes that there are double empty lines between chapters, as this matches the format of many of the books available on Project Gutenberg.
 
 
 ```

@@ -1,22 +1,21 @@
 ## Project code:
 
-book_summarizer.py
+- abstractive_summarizer.py
 
-Run from command line, choose a book title, output is a summary of the book
+Functions for creating abstractive summaries of chapters
 
-data_download_and_stats.py
+- book_summarizer.py
+
+Run from command line, choose a book title, output is a summary of the book with the chosen features
+
+- data.py
 
 Functions for downloading the books from Project Gutenberg, and for processing the text files
 
-entity_extraction.py
+- entity_extraction.py
 
-Functions for entity extraction using spaCy
+Functions for creating entity summaries of chapters using spaCy
 
-existing_methods.py
+- extractive_summarizer.py
 
-Test of the existing extractive summarizer methods
-
-extractive_summarizer.py
-
-Functions for creating extractive summaries of chapters
-
+Functions for creating extractive summaries of chapters using sumy
