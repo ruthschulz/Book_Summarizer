@@ -218,28 +218,17 @@ def create_abstr_abstr_summary_chapter(book_id, chapter, small=True):
         makedirs('../sum_data')
     num_segments, book_text = process_text_in(get_data_filename(
         book_id, 'book_chapters', chapter), '../sum_data/test.txt')
-    if num_segments > 1:
-        call_abstractive_summarizer()
-        abstractive_sentences = process_text_out('../nats_results/summaries.txt',
-                                                 'tmp.txt')
-    else:
-        # so short a section, can just copy across existing text
-        abstractive_sentences = book_text.replace('\n', '').strip()
-        abstractive_sentences = abstractive_sentences[0].upper(
-        ) + abstractive_sentences[1:]
+    call_abstractive_summarizer()
+    abstractive_sentences = process_text_out('../nats_results/summaries.txt',
+                                             'tmp.txt')
     level = 0
-    thresh = 5 if small else 20
+    thresh = 1 if small else 20
     while num_segments > thresh and level < 4:
         num_segments, book_text = process_text_in(
             'tmp.txt', '../sum_data/test.txt')
-        if num_segments > 1:
-            call_abstractive_summarizer()
-            abstractive_sentences = process_text_out(
-                '../nats_results/summaries.txt', 'tmp.txt')
-        else:
-            abstractive_sentences = book_text.replace('\n', '').strip()
-            abstractive_sentences = abstractive_sentences[0].upper(
-            ) + abstractive_sentences[1:]
+        call_abstractive_summarizer()
+        abstractive_sentences = process_text_out(
+            '../nats_results/summaries.txt', 'tmp.txt')
         level += 1
     return abstractive_sentences
 
